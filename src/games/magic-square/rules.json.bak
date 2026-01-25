@@ -1,0 +1,13 @@
+{
+  "3x3": {
+    "1": { "label": "Top Center" },
+    "2": { "label": "Bottom → (bcs wall)", "icon": "ArrowRight" },
+    "3": { "label": "LeftEdge ↑ (bcs wall)", "icon": "ArrowUp" },
+    "4": { "label": "↓ (bcs blocked)", "icon": "ArrowDown" },
+    "5": { "label": "↗", "icon": "ArrowUpRight" },
+    "6": { "label": "↗", "icon": "ArrowUpRight" },
+    "7": { "label": "↓ (bcs blocked)", "icon": "ArrowDown" },
+    "8": { "label": "LeftEdge ↑", "icon": "ArrowUp" },
+    "9": { "label": "Bottom →", "icon": "ArrowRight" }
+  }
+}
