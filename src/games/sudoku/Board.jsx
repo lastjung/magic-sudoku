@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { generateSudoku } from './logic';
 import { cn } from '../../utils/cn';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -6,11 +6,10 @@ import { Trophy, RefreshCw, Eraser, LayoutGrid, AlertCircle, Edit3, HelpCircle }
 
 export default function SudokuBoard() {
   const [difficulty, setDifficulty] = useState('easy');
-  const [game, setGame] = useState({ initial: [], current: [], solution: [] });
-  const [selected, setSelected] = useState(null);
-  const [mistakes, setMistakes] = useState(0);
-  const [isSolved, setIsSolved] = useState(false);
-  const [noteMode, setNoteMode] = useState(false);
+  const [game, setGame] = useState(() => {
+    const { initial, solution } = generateSudoku('easy');
+    return { initial, current: initial.map(row => [...row]), solution };
+  });
 
   const startNewGame = useCallback(() => {
     const { initial, solution } = generateSudoku(difficulty);
@@ -21,9 +20,17 @@ export default function SudokuBoard() {
     setSelected(null);
   }, [difficulty]);
 
+  // No longer need immediate call in useEffect for initial mount
+  // But we still need to restart when difficulty changes
+  const isFirstMount = useRef(true);
   useEffect(() => {
+    if (isFirstMount.current) {
+        isFirstMount.current = false;
+        return;
+    }
     startNewGame();
   }, [startNewGame]);
+
 
   const handleCellClick = (r, c) => {
     if (game.initial[r][c] !== 0) return;
@@ -33,25 +40,26 @@ export default function SudokuBoard() {
   const handleNumberInput = useCallback((num) => {
     if (!selected || isSolved) return;
     const { r, c } = selected;
-    if (game.initial[r][c] !== 0) return;
 
-    if (noteMode) {
-        console.log("Note added:", num);
-        return;
-    }
+    setGame(prev => {
+      if (prev.initial[r][c] !== 0) return prev;
+      if (noteMode) return prev; // Notes handled elsewhere
 
-    const newCurrent = game.current.map(row => [...row]);
-    newCurrent[r][c] = num;
-    setGame(prev => ({ ...prev, current: newCurrent }));
+      const newCurrent = prev.current.map(row => [...row]);
+      newCurrent[r][c] = num;
 
-    if (num !== 0 && num !== game.solution[r][c]) {
-      setMistakes(m => m + 1);
-    }
-    
-    if (JSON.stringify(newCurrent) === JSON.stringify(game.solution)) {
+      if (num !== 0 && num !== prev.solution[r][c]) {
+        setMistakes(m => m + 1);
+      }
+      
+      if (JSON.stringify(newCurrent) === JSON.stringify(prev.solution)) {
         setIsSolved(true);
-    }
-  }, [selected, game, isSolved, noteMode]);
+      }
+
+      return { ...prev, current: newCurrent };
+    });
+  }, [selected, isSolved, noteMode]);
+
 
   useEffect(() => {
     const handleKeyDown = (e) => {
