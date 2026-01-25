@@ -2,10 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Play, Pause, RefreshCw, ChevronLeft, ChevronRight, SkipBack, SkipForward,
-  CheckCircle2, Target, ArrowDown, ArrowUp, ArrowRight, BrainCircuit
+  CheckCircle2, Target, ArrowDown, ArrowUp, ArrowRight, ArrowUpRight, Zap, LayoutGrid
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { audioEngine } from '../../utils/audio';
+import rulesData from './rules.json';
 
 export const MagicSquareCard = ({ 
   size, 
@@ -123,9 +124,6 @@ export const MagicSquareCard = ({
       {/* Header */}
       <div className="flex justify-between items-center mb-4">
         <div className="flex items-center gap-2">
-          <div className="p-1.5 bg-emerald-600 rounded-lg shadow-lg shadow-emerald-500/20">
-            <BrainCircuit size={14} className="text-white" />
-          </div>
           <h3 className="text-xs font-bold text-emerald-300 uppercase tracking-widest">{size}x{size} Grid</h3>
         </div>
         <div className="flex items-center gap-1.5">
@@ -133,54 +131,157 @@ export const MagicSquareCard = ({
         </div>
       </div>
 
-      {/* Board */}
-      <div className="flex-1 flex flex-col items-center justify-center min-h-[220px]">
-        <div 
-          className={cn(
-              "bg-slate-900/50 rounded-xl border border-slate-700/50 grid",
-              getGapSize(),
-              size <= 7 ? "p-3" : size <= 11 ? "p-1.5" : "p-1"
-          )}
-          style={{ gridTemplateColumns: `repeat(${size}, minmax(0, 1fr))` }}
-        >
-          {(mode === 'learn' ? learnBoard : practiceBoard).map((row, r) => 
-            row.map((v, c) => {
-              const isHighlight = mode === 'learn' && highlight?.r === r && highlight?.c === c;
-              return (
-                <div
-                  key={`${r}-${c}`}
-                  onClick={() => mode === 'practice' && handlePracticeClick(r, c)}
-                  className={cn(
-                    "flex items-center justify-center rounded-md font-bold transition-all relative overflow-hidden",
-                    getCellSize(),
-                    v ? "text-emerald-50" : "text-transparent",
-                    isComplete ? "bg-emerald-600/40 border-emerald-400" : 
-                    v ? "bg-emerald-900/40 border border-emerald-500/20" : "bg-slate-800/50 border border-slate-700/30",
-                    isHighlight && "ring-2 ring-emerald-400 z-10",
-                    mode === 'practice' && !v && !isComplete && "cursor-pointer hover:bg-white/5"
-                  )}
+      {/* Board Area with Sums */}
+      <div className="flex-1 flex flex-col items-center justify-center min-h-[220px] relative p-2">
+        
+          {/* Main Grid Row Wrapper */}
+          <div className="flex flex-col gap-1">
+          {(mode === 'learn' ? learnBoard : practiceBoard).map((row, r) => {
+            const rowSum = row.reduce((a, b) => a + (b || 0), 0);
+            const isRowComplete = rowSum === magicConstant && row.every(v => v !== null);
+
+            // Extract height class from getCellSize to match row height
+            const cellClasses = getCellSize();
+            const heightClass = cellClasses.split(' ').find(c => c.startsWith('h-')) || "h-10";
+
+            return (
+              <div key={`row-${r}`} className="flex items-center gap-1">
+                {/* Row Cells */}
+                <div 
+                   className={cn(
+                     "grid gap-1", 
+                     getGapSize()
+                   )}
+                   style={{ gridTemplateColumns: `repeat(${size}, minmax(0, 1fr))` }}
                 >
-                  {v || ''}
+                  {row.map((v, c) => {
+                    const isHighlight = mode === 'learn' && highlight?.r === r && highlight?.c === c;
+                    
+                    // Success Visualization logic
+                    let successColor = "";
+                    if (isComplete) {
+                        if (r === c) successColor = "ring-2 ring-amber-400/50 bg-amber-400/10";
+                        else if (r + c === size - 1) successColor = "ring-2 ring-amber-400/50 bg-amber-400/10";
+                        else if (r % 2 === 0) successColor = "bg-rose-500/10 text-rose-300"; 
+                        else successColor = "bg-cyan-500/10 text-cyan-300";
+                    }
+
+                    return (
+                      <div
+                        key={`${r}-${c}`}
+                        onClick={() => mode === 'practice' && handlePracticeClick(r, c)}
+                        className={cn(
+                          "flex items-center justify-center rounded-md font-bold transition-all relative overflow-hidden",
+                          cellClasses, 
+                          v ? (isComplete ? "text-white" : "text-emerald-50") : "text-transparent",
+                          !isComplete && (v ? "bg-emerald-900/40 border border-emerald-500/20" : "bg-slate-800/50 border border-slate-700/30"),
+                          isComplete && !successColor && "bg-slate-800 border border-slate-700",
+                          successColor,
+                          isHighlight && "ring-2 ring-emerald-400 z-10",
+                          mode === 'practice' && !v && !isComplete && "cursor-pointer hover:bg-white/5"
+                        )}
+                      >
+                        {v || ''}
+                      </div>
+                    );
+                  })}
                 </div>
-              );
-            })
-          )}
+                
+                {/* Row Sum Indicator - Height Matched */}
+                <div className={cn(
+                  "flex items-center justify-center rounded px-1.5 min-w-[3.5ch] font-mono text-xs font-bold transition-opacity duration-700",
+                  heightClass,
+                  isRowComplete ? "bg-sky-500/20 text-sky-300 border border-sky-500/30" : "bg-slate-700/40 text-slate-400 border border-slate-600/30",
+                  isComplete ? "opacity-100" : "opacity-0" // Hide until complete
+                )}>
+                  {rowSum > 0 ? rowSum : '-'}
+                </div>
+              </div>
+            );
+          })}
+
+          {/* Bottom Column & Diagonal Sums */}
+          <div className={cn("flex items-center gap-1 transition-opacity duration-700", isComplete ? "opacity-100" : "opacity-0")}>
+             <div 
+               className={cn("grid gap-1", getGapSize())} 
+               style={{ gridTemplateColumns: `repeat(${size}, minmax(0, 1fr))` }}
+             >
+               {Array.from({ length: size }).map((_, c) => {
+                 const colSum = (mode === 'learn' ? learnBoard : practiceBoard).reduce((acc, row) => acc + (row[c] || 0), 0);
+                 const isColComplete = colSum === magicConstant && (mode === 'learn' ? learnBoard : practiceBoard).every(row => row[c] !== null);
+                 
+                 return (
+                   <div key={`col-sum-${c}`} className={cn(
+                     "h-6 flex items-center justify-center rounded font-mono text-xs font-bold", 
+                     getCellSize().split(' ')[0], 
+                     isColComplete ? "bg-sky-500/20 text-sky-300 border border-sky-500/30" : "bg-slate-700/40 text-slate-400 border border-slate-600/30"
+                   )}>
+                     {colSum > 0 ? colSum : '-'}
+                   </div>
+                 );
+               })}
+             </div>
+
+             {/* Main Diagonal Sum (\) - Bottom Right (Aligned with Row Sums) */}
+             <div className={cn(
+               "flex items-center justify-center rounded px-1.5 min-w-[3.5ch] font-mono text-xs font-bold h-6",
+               (() => {
+                 const currentBoard = mode === 'learn' ? learnBoard : practiceBoard;
+                 const mainDiagSum = currentBoard.reduce((acc, row, i) => acc + (row[i] || 0), 0);
+                 const isMainDiagComplete = mainDiagSum === magicConstant && currentBoard.every((row, i) => row[i] !== null);
+                 return isMainDiagComplete ? "bg-sky-500/20 text-sky-300 border border-sky-500/30" : "bg-slate-700/40 text-slate-400 border border-slate-600/30";
+               })()
+             )}>
+                {(() => {
+                  const currentBoard = mode === 'learn' ? learnBoard : practiceBoard;
+                  const sum = currentBoard.reduce((acc, row, i) => acc + (row[i] || 0), 0);
+                  return sum > 0 ? sum : '-';
+               })()}
+             </div>
+          </div>
         </div>
       </div>
 
       {/* Feedback / Desc */}
-      <div className="mt-4 h-10 flex items-center justify-center px-2">
+      <div className="mt-4 h-12 flex items-center justify-center px-2">
          <AnimatePresence mode="wait">
             {mode === 'learn' ? (
-              <motion.span 
+              <motion.div
                 key={currentStepIndex}
                 initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }}
-                className="text-[11px] font-bold text-emerald-200/80 text-center uppercase tracking-tight"
+                className="flex flex-col items-center gap-1"
               >
-                {currentStep.desc}
-              </motion.span>
+                {(() => {
+                  if (isComplete) {
+                      return (
+                        <div className="flex items-center justify-center text-amber-400 animate-pulse">
+                            <span className="text-lg font-black uppercase tracking-widest">Success!</span>
+                        </div>
+                      );
+                  }
+
+                  const sizeKey = `${size}x${size}`;
+                  const rule = rulesData[sizeKey]?.[currentStep.val];
+                  
+                  // Label ONLY
+                  if (rule) {
+                    return (
+                      <div className="flex items-center justify-center text-amber-400">
+                        <span className="text-base font-black uppercase tracking-tight">{rule.label}</span>
+                      </div>
+                    );
+                  }
+                  
+                  // Fallback for missing rules (should not happen for odd sizes now)
+                  return (
+                    <span className="text-sm font-bold text-emerald-200/80 text-center uppercase tracking-tight">
+                      {currentStep.desc}
+                    </span>
+                  );
+                })()}
+              </motion.div>
             ) : feedback ? (
-              <motion.div 
+              <motion.div
                 key={feedback.msg}
                 initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
                 className={cn(

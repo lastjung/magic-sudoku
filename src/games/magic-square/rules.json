@@ -1,13 +1,666 @@
 {
   "3x3": {
-    "1": { "label": "Top Center" },
-    "2": { "label": "Bottom → (bcs wall)", "icon": "ArrowRight" },
-    "3": { "label": "LeftEdge ↑ (bcs wall)", "icon": "ArrowUp" },
-    "4": { "label": "↓ (bcs blocked)", "icon": "ArrowDown" },
-    "5": { "label": "↗", "icon": "ArrowUpRight" },
-    "6": { "label": "↗", "icon": "ArrowUpRight" },
-    "7": { "label": "↓ (bcs blocked)", "icon": "ArrowDown" },
-    "8": { "label": "LeftEdge ↑", "icon": "ArrowUp" },
-    "9": { "label": "Bottom →", "icon": "ArrowRight" }
+    "1": {
+      "label": "Top Center",
+      "icon": ""
+    },
+    "2": {
+      "label": "Bottom → (bcs wall)",
+      "icon": "ArrowRight"
+    },
+    "3": {
+      "label": "LeftEdge ↑ (bcs wall)",
+      "icon": "ArrowUp"
+    },
+    "4": {
+      "label": "↓ (bcs blocked)",
+      "icon": "ArrowDown"
+    },
+    "5": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "6": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "7": {
+      "label": "↓ (bcs blocked)",
+      "icon": "ArrowDown"
+    },
+    "8": {
+      "label": "LeftEdge ↑ (bcs wall)",
+      "icon": "ArrowUp"
+    },
+    "9": {
+      "label": "Bottom → (bcs wall)",
+      "icon": "ArrowRight"
+    }
+  },
+  "5x5": {
+    "1": {
+      "label": "Top Center",
+      "icon": ""
+    },
+    "2": {
+      "label": "Bottom → (bcs wall)",
+      "icon": "ArrowRight"
+    },
+    "3": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "4": {
+      "label": "LeftEdge ↑ (bcs wall)",
+      "icon": "ArrowUp"
+    },
+    "5": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "6": {
+      "label": "↓ (bcs blocked)",
+      "icon": "ArrowDown"
+    },
+    "7": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "8": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "9": {
+      "label": "Bottom → (bcs wall)",
+      "icon": "ArrowRight"
+    },
+    "10": {
+      "label": "LeftEdge ↑ (bcs wall)",
+      "icon": "ArrowUp"
+    },
+    "11": {
+      "label": "↓ (bcs blocked)",
+      "icon": "ArrowDown"
+    },
+    "12": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "13": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "14": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "15": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "16": {
+      "label": "↓ (bcs blocked)",
+      "icon": "ArrowDown"
+    },
+    "17": {
+      "label": "LeftEdge ↑ (bcs wall)",
+      "icon": "ArrowUp"
+    },
+    "18": {
+      "label": "Bottom → (bcs wall)",
+      "icon": "ArrowRight"
+    },
+    "19": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "20": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "21": {
+      "label": "↓ (bcs blocked)",
+      "icon": "ArrowDown"
+    },
+    "22": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "23": {
+      "label": "LeftEdge ↑ (bcs wall)",
+      "icon": "ArrowUp"
+    },
+    "24": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "25": {
+      "label": "Bottom → (bcs wall)",
+      "icon": "ArrowRight"
+    }
+  },
+  "7x7": {
+    "1": {
+      "label": "Top Center",
+      "icon": ""
+    },
+    "2": {
+      "label": "Bottom → (bcs wall)",
+      "icon": "ArrowRight"
+    },
+    "3": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "4": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "5": {
+      "label": "LeftEdge ↑ (bcs wall)",
+      "icon": "ArrowUp"
+    },
+    "6": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "7": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "8": {
+      "label": "↓ (bcs blocked)",
+      "icon": "ArrowDown"
+    },
+    "9": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "10": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "11": {
+      "label": "Bottom → (bcs wall)",
+      "icon": "ArrowRight"
+    },
+    "12": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "13": {
+      "label": "LeftEdge ↑ (bcs wall)",
+      "icon": "ArrowUp"
+    },
+    "14": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "15": {
+      "label": "↓ (bcs blocked)",
+      "icon": "ArrowDown"
+    },
+    "16": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "17": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "18": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "19": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "20": {
+      "label": "Bottom → (bcs wall)",
+      "icon": "ArrowRight"
+    },
+    "21": {
+      "label": "LeftEdge ↑ (bcs wall)",
+      "icon": "ArrowUp"
+    },
+    "22": {
+      "label": "↓ (bcs blocked)",
+      "icon": "ArrowDown"
+    },
+    "23": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "24": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "25": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "26": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "27": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "28": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "29": {
+      "label": "↓ (bcs blocked)",
+      "icon": "ArrowDown"
+    },
+    "30": {
+      "label": "LeftEdge ↑ (bcs wall)",
+      "icon": "ArrowUp"
+    },
+    "31": {
+      "label": "Bottom → (bcs wall)",
+      "icon": "ArrowRight"
+    },
+    "32": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "33": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "34": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "35": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "36": {
+      "label": "↓ (bcs blocked)",
+      "icon": "ArrowDown"
+    },
+    "37": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "38": {
+      "label": "LeftEdge ↑ (bcs wall)",
+      "icon": "ArrowUp"
+    },
+    "39": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "40": {
+      "label": "Bottom → (bcs wall)",
+      "icon": "ArrowRight"
+    },
+    "41": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "42": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "43": {
+      "label": "↓ (bcs blocked)",
+      "icon": "ArrowDown"
+    },
+    "44": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "45": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "46": {
+      "label": "LeftEdge ↑ (bcs wall)",
+      "icon": "ArrowUp"
+    },
+    "47": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "48": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "49": {
+      "label": "Bottom → (bcs wall)",
+      "icon": "ArrowRight"
+    }
+  },
+  "9x9": {
+    "1": {
+      "label": "Top Center",
+      "icon": ""
+    },
+    "2": {
+      "label": "Bottom → (bcs wall)",
+      "icon": "ArrowRight"
+    },
+    "3": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "4": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "5": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "6": {
+      "label": "LeftEdge ↑ (bcs wall)",
+      "icon": "ArrowUp"
+    },
+    "7": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "8": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "9": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "10": {
+      "label": "↓ (bcs blocked)",
+      "icon": "ArrowDown"
+    },
+    "11": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "12": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "13": {
+      "label": "Bottom → (bcs wall)",
+      "icon": "ArrowRight"
+    },
+    "14": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "15": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "16": {
+      "label": "LeftEdge ↑ (bcs wall)",
+      "icon": "ArrowUp"
+    },
+    "17": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "18": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "19": {
+      "label": "↓ (bcs blocked)",
+      "icon": "ArrowDown"
+    },
+    "20": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "21": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "22": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "23": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "24": {
+      "label": "Bottom → (bcs wall)",
+      "icon": "ArrowRight"
+    },
+    "25": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "26": {
+      "label": "LeftEdge ↑ (bcs wall)",
+      "icon": "ArrowUp"
+    },
+    "27": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "28": {
+      "label": "↓ (bcs blocked)",
+      "icon": "ArrowDown"
+    },
+    "29": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "30": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "31": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "32": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "33": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "34": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "35": {
+      "label": "Bottom → (bcs wall)",
+      "icon": "ArrowRight"
+    },
+    "36": {
+      "label": "LeftEdge ↑ (bcs wall)",
+      "icon": "ArrowUp"
+    },
+    "37": {
+      "label": "↓ (bcs blocked)",
+      "icon": "ArrowDown"
+    },
+    "38": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "39": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "40": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "41": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "42": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "43": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "44": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "45": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "46": {
+      "label": "↓ (bcs blocked)",
+      "icon": "ArrowDown"
+    },
+    "47": {
+      "label": "LeftEdge ↑ (bcs wall)",
+      "icon": "ArrowUp"
+    },
+    "48": {
+      "label": "Bottom → (bcs wall)",
+      "icon": "ArrowRight"
+    },
+    "49": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "50": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "51": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "52": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "53": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "54": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "55": {
+      "label": "↓ (bcs blocked)",
+      "icon": "ArrowDown"
+    },
+    "56": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "57": {
+      "label": "LeftEdge ↑ (bcs wall)",
+      "icon": "ArrowUp"
+    },
+    "58": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "59": {
+      "label": "Bottom → (bcs wall)",
+      "icon": "ArrowRight"
+    },
+    "60": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "61": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "62": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "63": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "64": {
+      "label": "↓ (bcs blocked)",
+      "icon": "ArrowDown"
+    },
+    "65": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "66": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "67": {
+      "label": "LeftEdge ↑ (bcs wall)",
+      "icon": "ArrowUp"
+    },
+    "68": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "69": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "70": {
+      "label": "Bottom → (bcs wall)",
+      "icon": "ArrowRight"
+    },
+    "71": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "72": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "73": {
+      "label": "↓ (bcs blocked)",
+      "icon": "ArrowDown"
+    },
+    "74": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "75": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "76": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "77": {
+      "label": "LeftEdge ↑ (bcs wall)",
+      "icon": "ArrowUp"
+    },
+    "78": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "79": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "80": {
+      "label": "↗",
+      "icon": "ArrowUpRight"
+    },
+    "81": {
+      "label": "Bottom → (bcs wall)",
+      "icon": "ArrowRight"
+    }
   }
 }

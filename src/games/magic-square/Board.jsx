@@ -4,7 +4,7 @@ import { generateMagicSquareSteps } from './logic';
 import { BookOpen, GraduationCap, LayoutGrid, Zap, RotateCcw } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
-const ALL_8_SIZES = [3, 4, 5, 6, 7, 8, 9, 10];
+const ALL_8_SIZES = [3, 5, 7, 9];
 
 const MagicControlCard = ({ 
     activeSizes, 
