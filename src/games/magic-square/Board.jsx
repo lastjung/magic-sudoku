@@ -1,219 +1,250 @@
 import React, { useState, useMemo } from 'react';
 import { MagicSquareCard } from './MagicSquareCard';
 import { generateMagicSquareSteps } from './logic';
-import { BookOpen, GraduationCap, LayoutGrid, Zap, RotateCcw, Sliders } from 'lucide-react';
+import { BookOpen, GraduationCap, LayoutGrid, Zap, RotateCcw, Sliders, Play, Check, BrainCircuit } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
-const ALL_8_SIZES = [3, 5, 7, 9];
+const ALL_SIZES = [3, 4, 5, 6, 7, 8, 9, 10];
 
 const MagicControlCard = ({ 
-    activeSizes, 
-    toggleSize, 
-    selectAll, 
-    deselectAll, 
+    selectedSize, 
+    setSelectedSize,
+    selectedAlgos, 
+    toggleAlgo, 
+    toggleAllAlgos,
     mainMode, 
     setMainMode,
-    algoMode,
-    setAlgoMode
+    onRunAll,
+    onResetAll
 }) => {
   const simulationAlgos = [
-    { id: 'formula', label: 'FORMULA', icon: BookOpen },
-    { id: 'backtrack', label: 'BACKTRACK', icon: RotateCcw },
-    { id: 'smart', label: 'SMART BT', icon: Zap },
-    { id: 'heuristic', label: 'HEURISTIC', icon: LayoutGrid },
-    { id: 'brute', label: 'BRUTE FORCE', icon: Sliders },
+    { id: 'formula', label: 'Direct Formula', icon: BookOpen },
+    { id: 'backtrack', label: 'Recursive Backtrack', icon: RotateCcw },
+    { id: 'smart', label: 'Pruned Backtrack', icon: Zap },
+    { id: 'heuristic', label: 'Heuristic Search', icon: LayoutGrid },
+    { id: 'dynamic', label: 'CSP Solver (Heuristic)', icon: BrainCircuit },
+    { id: 'brute', label: 'Pure Brute Force', icon: Sliders },
   ];
+
+  const allSelected = selectedAlgos.size === simulationAlgos.length;
+
   return (
-    <div className="bg-slate-800/60 backdrop-blur-xl border border-emerald-500/30 rounded-xl p-4 flex flex-col gap-3 shadow-2xl relative overflow-hidden group h-[320px]">
-      <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent pointer-events-none" />
+    <div className="bg-slate-800/60 backdrop-blur-xl border border-emerald-500/30 rounded-xl p-4 flex flex-col gap-3 shadow-2xl relative overflow-hidden group h-full min-h-[400px]">
+      <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-transparent pointer-events-none" />
       
       {/* Header */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 mb-1">
         <Zap size={16} className="text-amber-400 fill-amber-400/20" />
-        <h3 className="text-xs font-bold text-white uppercase tracking-widest">Logic Control</h3>
+        <h3 className="text-xs font-bold text-white uppercase tracking-widest">Lab Control</h3>
       </div>
 
-      {/* Mode Switcher (Main) */}
+      {/* Main Mode Switcher */}
       <div className="grid grid-cols-2 gap-1 p-1 bg-slate-900/50 rounded-lg border border-white/5">
         {[
-            { id: 'simulation', label: 'SIMULATION', icon: Zap },
-            { id: 'practice', label: 'PRACTICE', icon: GraduationCap }
+            { id: 'simulation', label: 'LAB / Simulation', icon: Zap },
+            { id: 'practice', label: 'PRACTICE / Play', icon: GraduationCap }
         ].map(m => (
             <button 
                 key={m.id}
                 onClick={() => setMainMode(m.id)}
                 className={cn(
-                    "flex items-center justify-center gap-1.5 py-2 rounded-md text-[10px] font-black tracking-widest transition-all",
+                    "flex items-center justify-center gap-1.5 py-2.5 rounded-md text-[9px] font-black tracking-widest transition-all",
                     mainMode === m.id 
-                    ? "bg-emerald-600 text-white shadow-lg shadow-emerald-500/20" 
+                    ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/20" 
                     : "bg-transparent text-slate-500 hover:text-white hover:bg-white/5"
                 )}
             >
-                <m.icon size={12} /> {m.label}
+                <m.icon size={12} /> {m.id.toUpperCase()}
             </button>
         ))}
       </div>
 
-      {/* Sub-Mode (Algorithms) - only visible if simulation is selected */}
+      {/* Primary Actions (Run / Reset) */}
+      <div className="flex gap-2 mt-1">
+        <button 
+          onClick={onResetAll}
+          className="flex-1 flex items-center justify-center gap-2 py-3 bg-slate-700/50 hover:bg-slate-700 text-slate-300 rounded-xl font-bold text-xs border border-slate-600/50 transition-all active:scale-95"
+        >
+          <RotateCcw size={14} /> RESET
+        </button>
+        <button 
+          onClick={onRunAll}
+          disabled={mainMode === 'practice'}
+          className={cn(
+              "flex-[2] flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-xs shadow-xl transition-all active:scale-95",
+              mainMode === 'practice' 
+                ? "bg-slate-800 text-slate-600 cursor-not-allowed" 
+                : "bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-500/30"
+          )}
+        >
+          <Play size={14} fill="currentColor" /> RUN SELECTED
+        </button>
+      </div>
+
+      {/* Algorithm Selection (Checkboxes) - only for simulation */}
       {mainMode === 'simulation' && (
-        <div className="flex flex-col gap-2 p-2 bg-slate-900/30 rounded-lg border border-white/5">
-          <span className="text-[9px] font-bold text-slate-500 uppercase tracking-tighter ml-1">Algorithm</span>
-          <div className="grid grid-cols-2 gap-1.5">
+        <div className="flex flex-col gap-2 mt-2">
+          <button 
+             onClick={toggleAllAlgos}
+             className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-900/40 border border-indigo-500/20 text-indigo-300 text-[10px] font-bold uppercase transition-all hover:bg-indigo-500/10"
+          >
+             <div className={cn(
+                 "w-4 h-4 rounded border flex items-center justify-center transition-all",
+                 allSelected ? "bg-indigo-500 border-indigo-500" : "border-slate-600"
+             )}>
+                 {allSelected && <Check size={12} className="text-white" />}
+             </div>
+             {allSelected ? 'Deselect All' : 'Select All Algorithms'}
+          </button>
+
+          <div className="grid grid-cols-1 gap-1.5">
             {simulationAlgos.map(algo => (
-              <button 
+              <label 
                 key={algo.id}
-                onClick={() => setAlgoMode(algo.id)}
                 className={cn(
-                  "flex items-center gap-2 px-2 py-2 rounded-md transition-all text-[9px] font-bold",
-                  algoMode === algo.id 
-                    ? "bg-emerald-500/20 text-emerald-300 ring-1 ring-emerald-500/50" 
-                    : "text-slate-500 hover:text-slate-300 hover:bg-white/5"
+                  "flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-all cursor-pointer",
+                  selectedAlgos.has(algo.id) 
+                    ? "bg-indigo-500/10 border-indigo-500/30 text-indigo-100" 
+                    : "bg-slate-900/30 border-transparent text-slate-500 hover:text-slate-400"
                 )}
               >
-                <algo.icon size={10} />
-                {algo.label}
-              </button>
+                <input 
+                  type="checkbox" 
+                  className="hidden" 
+                  checked={selectedAlgos.has(algo.id)}
+                  onChange={() => toggleAlgo(algo.id)}
+                />
+                <div className={cn(
+                    "w-4 h-4 rounded border flex items-center justify-center transition-all",
+                    selectedAlgos.has(algo.id) ? "bg-indigo-500 border-indigo-500" : "border-slate-700"
+                )}>
+                    {selectedAlgos.has(algo.id) && <Check size={12} className="text-white" />}
+                </div>
+                <algo.icon size={12} className={selectedAlgos.has(algo.id) ? "text-indigo-400" : ""} />
+                <span className="text-[10px] font-bold tracking-wider">{algo.label}</span>
+              </label>
             ))}
           </div>
         </div>
       )}
 
-      {/* Action Buttons */}
-      <div className="flex gap-2">
-        <button 
-          onClick={deselectAll}
-          className="flex-1 group flex items-center justify-center gap-1.5 px-3 py-2 bg-slate-700/50 hover:bg-slate-700 hover:text-white text-slate-300 rounded-lg font-bold text-xs border border-slate-600/50 transition-all active:scale-95"
-        >
-          <RotateCcw size={14} className="transition-transform duration-500 group-hover:-rotate-180" /> RESET
-        </button>
-        <button 
-          onClick={selectAll}
-          className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold text-xs shadow-xl shadow-emerald-500/30 transition-all active:scale-95"
-        >
-          SELECT ALL
-        </button>
+      {/* Unified Size Selection */}
+      <div className="mt-auto pt-3 border-t border-slate-700/50">
+        <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest block mb-2 text-center">Select Order (N x N)</span>
+        <div className="grid grid-cols-4 gap-1.5">
+          {ALL_SIZES.map(size => (
+            <button 
+              key={size}
+              onClick={() => setSelectedSize(size)}
+              className={cn(
+                "py-2 rounded-lg font-bold text-xs transition-all border",
+                selectedSize === size 
+                  ? "bg-indigo-600 border-indigo-500 text-white shadow-lg" 
+                  : "bg-slate-900/30 border-transparent text-slate-500 hover:text-slate-300"
+              )}
+            >
+              {size}x{size}
+            </button>
+          ))}
+        </div>
       </div>
-
-      {/* Grid Selection Grid (2x4) */}
-      <div className="grid grid-cols-2 gap-2 mt-1">
-        {ALL_8_SIZES.map(size => (
-          <label 
-            key={size}
-            className={cn(
-              "flex items-center gap-2 cursor-pointer p-1.5 rounded-lg border transition-all active:scale-95",
-              activeSizes.has(size) 
-                ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300" 
-                : "bg-slate-900/30 border-transparent text-slate-500 hover:text-slate-400"
-            )}
-          >
-            <input 
-              type="checkbox"
-              className="hidden"
-              checked={activeSizes.has(size)}
-              onChange={() => toggleSize(size)}
-            />
-            <div className={cn(
-              "w-4 h-4 rounded border flex items-center justify-center transition-all flex-shrink-0",
-              activeSizes.has(size) ? "bg-emerald-500 border-emerald-500" : "border-slate-600"
-            )}>
-              {activeSizes.has(size) && <div className="w-2 h-2 bg-white rounded-sm" />}
-            </div>
-            <span className="text-xs font-bold uppercase tracking-tight">{size}x{size}</span>
-          </label>
-        ))}
-      </div>
-
-      {/* Footer Info */}
-      <p className="mt-auto text-[10px] text-slate-500 font-bold uppercase tracking-wider text-center">
-        3x3 to 10x10 Logic Dashboard
-      </p>
     </div>
   );
 };
 
 export default function MagicSquareBoard({ speed }) {
-  const [activeSizes, setActiveSizes] = useState(new Set(ALL_8_SIZES));
-  const [mainMode, setMainMode] = useState('simulation'); // 'simulation' | 'practice'
-  const [algoMode, setAlgoMode] = useState('formula'); // for simulation
+  const [selectedSize, setSelectedSize] = useState(3);
+  const [selectedAlgos, setSelectedAlgos] = useState(new Set(['formula', 'smart']));
+  const [mainMode, setMainMode] = useState('simulation');
+  const [triggerRun, setTriggerRun] = useState(0);
+  const [triggerReset, setTriggerReset] = useState(0);
 
-  const toggleSize = (size) => {
-    setActiveSizes(prev => {
+  const toggleAlgo = (id) => {
+    setSelectedAlgos(prev => {
       const next = new Set(prev);
-      if (next.has(size)) {
-        if (next.size > 1) next.delete(size);
+      if (next.has(id)) {
+        if (next.size > 1) next.delete(id);
       } else {
-        next.add(size);
+        next.add(id);
       }
       return next;
     });
   };
 
-  const selectAll = () => setActiveSizes(new Set(ALL_8_SIZES));
-  const deselectAll = () => {
-    const min = new Set();
-    min.add(3);
-    setActiveSizes(min);
+  const toggleAllAlgos = () => {
+    if (selectedAlgos.size === 5) {
+        setSelectedAlgos(new Set(['formula']));
+    } else {
+        setSelectedAlgos(new Set(['formula', 'backtrack', 'smart', 'heuristic', 'brute']));
+    }
   };
 
   const stepsData = useMemo(() => {
-    const data = {};
-    activeSizes.forEach(size => {
-      data[size] = generateMagicSquareSteps(size);
-    });
-    return data;
-  }, [activeSizes]);
+    return generateMagicSquareSteps(selectedSize);
+  }, [selectedSize]);
 
-  const visibleSizes = [...activeSizes].sort((a, b) => a - b);
+  const handleRunAll = () => setTriggerRun(prev => prev + 1);
+  const handleResetAll = () => setTriggerReset(prev => prev + 1);
+
+  const activeAlgos = [...selectedAlgos];
+  
+  // Combine boards and controller into a list for indexed rendering
+  const renderItems = [];
+  if (mainMode === 'simulation') {
+    activeAlgos.forEach((algoId, idx) => {
+      renderItems.push({ type: 'board', algoId });
+    });
+  } else {
+    renderItems.push({ type: 'board', algoId: 'formula' });
+  }
+
+  // Insert controller at 3rd position (index 2) or at the end if fewer than 2 boards
+  const insertIdx = Math.min(2, renderItems.length);
+  renderItems.splice(insertIdx, 0, { type: 'control' });
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-8">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {/* First 2 Cards */}
-        {visibleSizes.slice(0, 2).map(size => (
-          <MagicSquareCard 
-            key={size}
-            size={size}
-            mainMode={mainMode}
-            algoMode={algoMode}
-            steps={stepsData[size]}
-            speed={speed}
-          />
-        ))}
-
-        {/* 3rd Position: Control Card */}
-        <MagicControlCard 
-          activeSizes={activeSizes}
-          toggleSize={toggleSize}
-          selectAll={selectAll}
-          deselectAll={deselectAll}
-          mainMode={mainMode}
-          setMainMode={setMainMode}
-          algoMode={algoMode}
-          setAlgoMode={setAlgoMode}
-        />
-
-        {/* Remaining Cards */}
-        {visibleSizes.slice(2).map(size => (
-          <MagicSquareCard 
-            key={size}
-            size={size}
-            mainMode={mainMode}
-            algoMode={algoMode}
-            steps={stepsData[size]}
-            speed={speed}
-          />
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
+        {renderItems.map((item, index) => (
+            item.type === 'control' ? (
+                <MagicControlCard 
+                    key="control-card"
+                    selectedSize={selectedSize}
+                    setSelectedSize={setSelectedSize}
+                    selectedAlgos={selectedAlgos}
+                    toggleAlgo={toggleAlgo}
+                    toggleAllAlgos={toggleAllAlgos}
+                    mainMode={mainMode}
+                    setMainMode={setMainMode}
+                    onRunAll={handleRunAll}
+                    onResetAll={handleResetAll}
+                />
+            ) : (
+                <MagicSquareCard 
+                    key={`${selectedSize}-${item.algoId}-${index}`}
+                    size={selectedSize}
+                    mainMode={mainMode}
+                    algoMode={item.algoId}
+                    steps={stepsData}
+                    speed={speed}
+                    triggerRun={triggerRun}
+                    triggerReset={triggerReset}
+                />
+            )
         ))}
       </div>
 
-      {/* Info Banner */}
-      <div className="mt-8 bg-emerald-950/20 border border-emerald-500/10 rounded-2xl p-6 flex items-center gap-4">
-          <div className="p-2.5 bg-emerald-500/20 rounded-xl text-emerald-400">
-              <LayoutGrid size={24} />
+      {/* Lab Info Banner */}
+      <div className="mt-12 bg-indigo-950/20 border border-indigo-500/10 rounded-3xl p-8 flex flex-col md:flex-row items-center gap-8 shadow-inner">
+          <div className="p-5 bg-indigo-500/20 rounded-2xl text-indigo-400 shadow-lg shadow-indigo-500/20">
+              <GraduationCap size={40} />
           </div>
-          <div>
-              <h4 className="text-emerald-300 font-bold text-sm mb-0.5 uppercase tracking-wide">Multi-Order Magic Square Studio</h4>
-              <p className="text-emerald-100/40 text-[11px] leading-relaxed uppercase tracking-tight">
-                  Visualizing Siamese (Odd), Inversion (Doubly Even), and Strachey (Singly Even) methods across orders 3-10.
+          <div className="text-center md:text-left">
+              <h4 className="text-indigo-200 font-black text-xl mb-2 uppercase tracking-widest">Algorithm Comparison Lab</h4>
+              <p className="text-indigo-100/40 text-sm leading-relaxed max-w-2xl font-medium">
+                  실험실 모드에서는 동일한 <span className="text-indigo-300">{selectedSize}x{selectedSize}</span> 환경에서 다양한 논리 엔진이 어떻게 동작하는지 관찰합니다. 
+                  <br className="hidden md:block" />
+                  직관적인 공식(Formula)부터 복잡한 백트래킹(Backtracking)까지, 각 알고리즘의 효율성을 실시간으로 비교해보세요.
               </p>
           </div>
       </div>

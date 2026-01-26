@@ -1,14 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { audioEngine } from '../../utils/audio';
 
-export const useMagicSquareGame = ({ size, mainMode, algoMode, steps, speed }) => {
-  // Map our new mode structure to internal simplified logic if needed
-  const mode = mainMode === 'simulation' ? (algoMode === 'formula' ? 'learn' : 'brute') : 'practice';
+export const useMagicSquareGame = ({ size, mainMode, algoMode, steps, speed, triggerRun = 0, triggerReset = 0 }) => {
+  const mode = mainMode === 'simulation' ? (algoMode === 'formula' ? 'learn' : (algoMode === 'dynamic' ? 'dynamic' : 'brute')) : 'practice';
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [practiceBoard, setPracticeBoard] = useState([]);
-  const [targetNum, setTargetNum] = useState(2);
-  const [lastCorrectPos, setLastCorrectPos] = useState({ r: 0, c: Math.floor(size/2) });
+  const [targetNum, setTargetNum] = useState(1);
+  const [lastCorrectPos, setLastCorrectPos] = useState({ r: 0, c: 0 });
   const [feedback, setFeedback] = useState(null);
   const [isSoundEnabled, setIsSoundEnabled] = useState(audioEngine.enabled);
   
@@ -16,33 +15,51 @@ export const useMagicSquareGame = ({ size, mainMode, algoMode, steps, speed }) =
   const playbackDelay = Math.max(50, 1050 - speed);
 
   const [stats, setStats] = useState({ attempts: 0, time: 0 });
+  const [dynamicDesc, setDynamicDesc] = useState("");
+  const [dynamicHighlight, setDynamicHighlight] = useState(null); // { r, c, type: 'active' | 'forced' | 'backtrack' }
   const startTimeRef = useRef(0);
   
-  // Backtracking Solver State
   const solverRef = useRef(null);
 
   const resetPractice = () => {
     const initialBoard = Array.from({ length: size }, () => Array(size).fill(null));
-    const startRow = 0;
-    const startCol = Math.floor(size / 2);
-    initialBoard[startRow][startCol] = 1;
-
     setPracticeBoard(initialBoard);
-    setTargetNum(2);
-    setLastCorrectPos({ r: startRow, c: startCol });
+    setTargetNum(1);
+    setLastCorrectPos({ r: 0, c: 0 });
     setFeedback(null);
     setStats({ attempts: 0, time: 0 });
+    setDynamicDesc("");
+    setDynamicHighlight(null);
     solverRef.current = null;
+    setCurrentStepIndex(0);
   };
 
-  // Initialize
   useEffect(() => {
-    setCurrentStepIndex(0);
     setIsPlaying(false);
     resetPractice();
   }, [size, steps, mainMode, algoMode]);
 
-  // Playback & Logic Loop
+  const lastTriggerRun = useRef(0);
+  useEffect(() => {
+    if (triggerRun > lastTriggerRun.current) {
+        lastTriggerRun.current = triggerRun;
+        setIsPlaying(true);
+        // Resume audio context on user action
+        audioEngine.init();
+    }
+  }, [triggerRun]);
+
+  const lastTriggerReset = useRef(0);
+  useEffect(() => {
+    if (triggerReset > lastTriggerReset.current) {
+        lastTriggerReset.current = triggerReset;
+        setIsPlaying(false);
+        resetPractice();
+    }
+  }, [triggerReset]);
+
+  const getMagicConstant = (n) => (n * (n * n + 1)) / 2;
+
   useEffect(() => {
     if (!isPlaying) {
       if (timerRef.current) clearInterval(timerRef.current);
@@ -51,12 +68,19 @@ export const useMagicSquareGame = ({ size, mainMode, algoMode, steps, speed }) =
 
     if (!solverRef.current || stats.attempts === 0) {
         startTimeRef.current = performance.now();
-        if (mode === 'brute') {
+        if (mode === 'brute' || algoMode === 'backtrack' || algoMode === 'smart' || algoMode === 'heuristic') {
             solverRef.current = {
                 board: Array(size * size).fill(null), 
-                currentNum: 1, 
-                stack: [], 
-                backtracking: false
+                currentNum: 1, stack: [], backtracking: false
+            };
+        } else if (mode === 'dynamic') {
+            solverRef.current = {
+                flatBoard: Array(size * size).fill(null),
+                used: Array(size * size + 1).fill(false),
+                stack: [],
+                filledCount: 0,
+                firstNumberPositions: [],
+                firstPosIdx: -1
             };
         } else {
             solverRef.current = { type: 'learn' };
@@ -74,11 +98,8 @@ export const useMagicSquareGame = ({ size, mainMode, algoMode, steps, speed }) =
             const next = prev + 1;
             const nextStep = steps[next];
             if (nextStep?.val && isSoundEnabled) audioEngine.playNote(nextStep.val);
-            
-            // Update practiceBoard to sync with steps board
             if (nextStep?.board) setPracticeBoard(nextStep.board);
             setStats(s => ({ ...s, attempts: next }));
-            
             return next;
           }
           setIsPlaying(false);
@@ -86,8 +107,7 @@ export const useMagicSquareGame = ({ size, mainMode, algoMode, steps, speed }) =
         });
       }, playbackDelay);
     } else if (mode === 'brute') {
-      const magicConst = (size * (size * size + 1)) / 2;
-
+      const magicConst = getMagicConstant(size);
       timerRef.current = setInterval(() => {
         const now = performance.now();
         const elapsed = Math.floor(now - startTimeRef.current);
@@ -95,182 +115,245 @@ export const useMagicSquareGame = ({ size, mainMode, algoMode, steps, speed }) =
 
         const solver = solverRef.current;
         if (!solver) return;
-
         const { board, stack } = solver;
 
-        // If we successfully placed up to N^2:
         if (solver.currentNum > size * size) {
-            // Brute Force needs a final check since it doesn't prune
-            let isFinalValid = true;
-            if (algoMode === 'brute') {
-                // Check all sums
-                for (let i = 0; i < size; i++) {
-                    let rS = 0, cS = 0;
-                    for (let j = 0; j < size; j++) {
-                        rS += board[i * size + j];
-                        cS += board[j * size + i];
-                    }
-                    if (rS !== magicConst || cS !== magicConst) isFinalValid = false;
-                }
-                let d1 = 0, d2 = 0;
-                for (let i = 0; i < size; i++) {
-                    d1 += board[i * size + i];
-                    d2 += board[i * size + (size - 1 - i)];
-                }
-                if (d1 !== magicConst || d2 !== magicConst) isFinalValid = false;
-            }
-
-            if (isFinalValid) {
-                setIsPlaying(false);
-                setTargetNum(size * size + 999);
-                if (isSoundEnabled) audioEngine.playSuccess();
-                return;
-            } else {
-                // Brute force failed, backtrack from the end
-                solver.currentNum = size * size;
-                // fall through to backtracking logic
-            }
+            setIsPlaying(false);
+            setTargetNum(size * size + 999);
+            if (isSoundEnabled) audioEngine.playSuccess();
+            setDynamicHighlight(null);
+            setDynamicDesc("🎉 Magic Square Found!");
+            return;
         }
 
-        // Prepare context for currentNum if needed
         let stackFrame = stack[solver.currentNum];
         if (!stackFrame) {
             let candidates = [];
-            
-            // Special Rule: For number '1', restrict positions to [1, 2, 5] as requested
             if (solver.currentNum === 1) {
-                // Indices 1, 2, 5 (0-based)
-                // 1=(0,1), 2=(0,2), 5=(1,2)
-                const startCandidates = [1, 2, 5];
-                // Filter out any that might be occupied (though for 1, board is empty)
-                candidates = startCandidates.filter(idx => idx < size * size && board[idx] === null);
+                if (size === 3) candidates = [0, 1, 4];
+                else if (size === 4) candidates = [0, 1, 5];
+                else if (size === 5) candidates = [0, 1, 2, 6, 7, 12];
+                else { for (let i = 0; i < size * size; i++) candidates.push(i); }
             } else {
-                // For other numbers, try all empty cells
-                for (let i = 0; i < size * size; i++) {
-                    if (board[i] === null) candidates.push(i);
-                }
+                for (let i = 0; i < size * size; i++) if (board[i] === null) candidates.push(i);
             }
-            
-            // Randomize candidates
             for (let i = candidates.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
             }
-            
             stackFrame = { candidates, triedIndex: -1 };
             stack[solver.currentNum] = stackFrame;
         }
 
-        stackFrame.triedIndex++; // Try next candidate position
-
-        // If no more positions to try for this number, Backtrack
+        stackFrame.triedIndex++;
         if (stackFrame.triedIndex >= stackFrame.candidates.length) {
-            stack[solver.currentNum] = null; // Clear frame
-            solver.currentNum--; // Go back to prev number
-            
-            if (solver.currentNum < 1) {
-                // Impossible (shouldn't happen for 3x3 if we start blank)
-                setIsPlaying(false);
-                return;
+            stack[solver.currentNum] = null;
+            const posToClear = board.indexOf(solver.currentNum);
+            if (posToClear !== -1) {
+                setDynamicHighlight({ r: Math.floor(posToClear/size), c: posToClear%size, type: 'backtrack' });
+                setDynamicDesc(`Backtrack: Moving ${solver.currentNum}...`);
+                board[posToClear] = null;
             }
-            
-            // Remove prev number from board
-            // Find where prev number was
-            // Actually we don't store pos in stack explicitly but we can find it
-            // Or we should have stored it. 
-            // In number-based backtracking, we need to know where we put currentNum to clear it.
-            // Let's assume board has it.
-            const prevIndex = board.indexOf(solver.currentNum);
-            if (prevIndex !== -1) board[prevIndex] = null;
-            
-            if (isSoundEnabled && Math.random() > 0.8) audioEngine.playNote(solver.currentNum); 
+            solver.currentNum--;
+            if (solver.currentNum < 1) { setIsPlaying(false); return; }
             setStats(prev => ({ ...prev, attempts: prev.attempts + 1 }));
-
         } else {
-            // Try placing currentNum at candidate position
+            const existingPos = board.indexOf(solver.currentNum);
+            if (existingPos !== -1) board[existingPos] = null;
+
             const pos = stackFrame.candidates[stackFrame.triedIndex];
             board[pos] = solver.currentNum;
-
-            // --- Validation / Pruning ---
             const r = Math.floor(pos / size);
             const c = pos % size;
+            setDynamicHighlight({ r, c, type: 'active' });
+            setDynamicDesc(`Placing ${solver.currentNum} at (${r},${c})`);
+
             let isValid = true;
+            let checks = [];
+            const row = []; for(let i=0; i<size; i++) row.push(r*size+i); checks.push(row);
+            const col = []; for(let i=0; i<size; i++) col.push(i*size+c); checks.push(col);
+            if (r===c) { const d1=[]; for(let i=0; i<size; i++) d1.push(i*size+i); checks.push(d1); }
+            if (r+c===size-1) { const d2=[]; for(let i=0; i<size; i++) d2.push(i*size+size-1-i); checks.push(d2); }
             
-            // Check Row
-            let rowSum = 0, rowFilled = 0;
-            for (let cc = 0; cc < size; cc++) {
-                const val = board[r * size + cc];
-                if (val !== null) { rowSum += val; rowFilled++; }
-            }
-            if (rowSum > magicConst) isValid = false;
-            // Strict check only if row is FULL
-            if (isValid && rowFilled === size && rowSum !== magicConst) isValid = false;
-
-            // Check Col
-            if (isValid) {
-                let colSum = 0, colFilled = 0;
-                for (let rr = 0; rr < size; rr++) {
-                    const val = board[rr * size + c];
-                    if (val !== null) { colSum += val; colFilled++; }
-                }
-                if (colSum > magicConst) isValid = false;
-                if (isValid && colFilled === size && colSum !== magicConst) isValid = false;
-            }
-
-            // Check Diagonals (Smart BT and Heuristic only)
-            if (isValid && (algoMode === 'smart' || algoMode === 'heuristic')) {
-                // Main Diagonal
-                if (r === c) {
-                    let d1Sum = 0, d1Filled = 0;
-                    for (let i = 0; i < size; i++) {
-                        const val = board[i * size + i];
-                        if (val !== null) { d1Sum += val; d1Filled++; }
-                    }
-                    if (d1Sum > magicConst) isValid = false;
-                    if (isValid && d1Filled === size && d1Sum !== magicConst) isValid = false;
-                }
-                // Anti Diagonal
-                if (isValid && (r + c === size - 1)) {
-                    let d2Sum = 0, d2Filled = 0;
-                    for (let i = 0; i < size; i++) {
-                        const val = board[i * size + (size - 1 - i)];
-                        if (val !== null) { d2Sum += val; d2Filled++; }
-                    }
-                    if (d2Sum > magicConst) isValid = false;
-                    if (isValid && d2Filled === size && d2Sum !== magicConst) isValid = false;
-                }
-            }
-
-            // Pure Brute Force: NO PRUNING (except for total constant at the very end)
-            if (algoMode === 'brute') {
-                isValid = true; // Always try to place
-                if (solver.currentNum === size * size) {
-                   // Only check validity at the very last step
-                   // (Actually checking all rows/cols/diags)
-                   // We'll trust the success check above (currentNum > size*size) 
-                   // but we need to ensure it's a valid magic square.
-                   // So for pure brute force, we just let it fill and check at 103.
-                }
+            for (let line of checks) {
+                const vals = line.map(i => board[i]).filter(v => v !== null);
+                const s = vals.reduce((a,b) => a+b, 0);
+                if (s > magicConst || (vals.length === size && s !== magicConst)) { isValid = false; break; }
             }
 
             if (isValid) {
-                // Success! Move to next number
-                // Silent on every step to avoid noise, only play rarely
-                if (isSoundEnabled && Math.random() > 0.99) audioEngine.playNote(solver.currentNum);
+                if (isSoundEnabled) audioEngine.playNote(solver.currentNum);
                 solver.currentNum++;
             } else {
-                // Invalid placement
+                setDynamicHighlight({ r, c, type: 'backtrack' });
+                setDynamicDesc(`Conflict: Sum mismatch at (${r},${c})`);
                 board[pos] = null;
                 setStats(prev => ({ ...prev, attempts: prev.attempts + 1 }));
             }
         }
-
-        // Update UI
         const newBoard2D = [];
-        for (let r = 0; r < size; r++) newBoard2D.push(board.slice(r * size, (r + 1) * size));
+        for (let r_row = 0; r_row < size; r_row++) newBoard2D.push(board.slice(r_row * size, (r_row + 1) * size));
         setPracticeBoard(newBoard2D);
+        // Unified Speed: Using playbackDelay directly without dividers
+      }, playbackDelay);
+    } else if (mode === 'dynamic') {
+        const magicConst = getMagicConstant(size);
+        timerRef.current = setInterval(() => {
+            const now = performance.now();
+            const elapsed = Math.floor(now - startTimeRef.current);
+            setStats(prev => ({ ...prev, time: elapsed }));
 
-      }, Math.max(5, playbackDelay / 10)); 
+            const solver = solverRef.current;
+            if (!solver) return;
+            const { flatBoard, used, stack } = solver;
+
+            if (solver.filledCount === size * size) {
+                setIsPlaying(false);
+                setDynamicDesc("🎉 CSP Solution Found!");
+                setDynamicHighlight(null);
+                setTargetNum(size * size + 999);
+                if (isSoundEnabled) audioEngine.playSuccess();
+                return;
+            }
+
+            if (solver.filledCount === 0) {
+                if (solver.firstPosIdx === -1) {
+                    let validStarts = [];
+                    if (size === 3) validStarts = [0, 1, 4];
+                    else if (size === 4) validStarts = [0, 1, 5];
+                    else if (size === 5) validStarts = [0, 1, 2, 6, 7, 12];
+                    else { for (let i = 0; i < size * size; i++) validStarts.push(i); }
+                    for (let i = validStarts.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [validStarts[i], validStarts[j]] = [validStarts[j], validStarts[i]];
+                    }
+                    solver.firstNumberPositions = validStarts;
+                    solver.firstPosIdx = 0;
+                } else {
+                    const prev1 = solver.firstNumberPositions[solver.firstPosIdx];
+                    flatBoard[prev1] = null;
+                    used[1] = false;
+                    solver.firstPosIdx++;
+                }
+
+                if (solver.firstPosIdx >= solver.firstNumberPositions.length) {
+                    setIsPlaying(false);
+                    return;
+                }
+
+                const pos1 = solver.firstNumberPositions[solver.firstPosIdx];
+                flatBoard[pos1] = 1;
+                used[1] = true;
+                solver.filledCount = 1;
+                setDynamicHighlight({ r: Math.floor(pos1/size), c: pos1%size, type: 'active' });
+                setDynamicDesc("Starting with 1 at optimized position...");
+                
+                const newB = [];
+                for (let rr = 0; rr < size; rr++) newB.push(flatBoard.slice(rr * size, (rr + 1) * size));
+                setPracticeBoard(newB);
+                return;
+            }
+
+            let currentFrame = stack[solver.filledCount];
+            if (!currentFrame) {
+                const emptyIndices = flatBoard.map((v, i) => v === null ? i : -1).filter(idx => idx !== -1);
+                const candidates = emptyIndices.map(idx => {
+                    let totalFilled = 0;
+                    const r_idx = Math.floor(idx / size), c_idx = idx % size;
+                    const lines = [];
+                    const row = []; for(let i=0; i<size; i++) row.push(r_idx*size+i); lines.push(row);
+                    const col = []; for(let i=0; i<size; i++) col.push(i*size+c_idx); lines.push(col);
+                    if (r_idx === c_idx) { const d1=[]; for(let i=0; i<size; i++) d1.push(i*size+i); lines.push(d1); }
+                    if (r_idx + c_idx === size - 1) { const d2=[]; for(let i=0; i<size; i++) d2.push(i*size+size-1-i); lines.push(d2); }
+                    lines.forEach(line => {
+                        totalFilled += line.reduce((acc, i) => acc + (flatBoard[i] !== null ? 1 : 0), 0);
+                    });
+                    return { idx, score: totalFilled };
+                }).sort((a,b) => b.score - a.score);
+
+                const cellIdx = candidates[0].idx;
+                let forcedVal = null;
+                const r_idx = Math.floor(cellIdx/size), c_idx = cellIdx % size;
+                const lines_c = [];
+                const row_c = []; for(let i=0; i<size; i++) row_c.push(r_idx*size+i); lines_c.push(row_c);
+                const col_c = []; for(let i=0; i<size; i++) col_c.push(i*size+c_idx); lines_c.push(col_c);
+                if (r_idx === c_idx) { const d1=[]; for(let i=0; i<size; i++) d1.push(i*size+i); lines_c.push(d1); }
+                if (r_idx + c_idx === size - 1) { const d2=[]; for(let i=0; i<size; i++) d2.push(i*size+size-1-i); lines_c.push(d2); }
+                for (let line of lines_c) {
+                    const filled = line.filter(i => flatBoard[i] !== null);
+                    if (filled.length === size - 1) {
+                        forcedVal = magicConst - filled.reduce((a,b) => a + flatBoard[b], 0);
+                        break;
+                    }
+                }
+
+                currentFrame = { cellIdx, triedNum: 0, forcedVal };
+                stack[solver.filledCount] = currentFrame;
+            }
+
+            const r = Math.floor(currentFrame.cellIdx/size), c = currentFrame.cellIdx % size;
+            let numToTry = null;
+
+            if (currentFrame.forcedVal !== null) {
+                if (currentFrame.triedNum === 0) {
+                    numToTry = currentFrame.forcedVal;
+                    currentFrame.triedNum = 999;
+                    setDynamicDesc(`Logical inference: ${numToTry} must be here.`);
+                }
+            } else {
+                numToTry = (currentFrame.triedNum === 0 ? 2 : currentFrame.triedNum + 1);
+                while (numToTry <= size * size && used[numToTry]) numToTry++;
+                currentFrame.triedNum = numToTry;
+                setDynamicDesc(`Trying ${numToTry} at (${r},${c})`);
+            }
+
+            if (numToTry !== null && numToTry >= 2 && numToTry <= size * size && !used[numToTry]) {
+                flatBoard[currentFrame.cellIdx] = numToTry;
+                used[numToTry] = true;
+                setDynamicHighlight({ r, c, type: currentFrame.forcedVal ? 'forced' : 'active' });
+
+                let isValid = true;
+                const lines_v = [];
+                const row_v = []; for(let i=0; i<size; i++) row_v.push(r*size+i); lines_v.push(row_v);
+                const col_v = []; for(let i=0; i<size; i++) col_v.push(i*size+c); lines_v.push(col_v);
+                if (r === c) { const d1=[]; for(let i=0; i<size; i++) d1.push(i*size+i); lines_v.push(d1); }
+                if (r + c === size - 1) { const d2=[]; for(let i=0; i<size; i++) d2.push(i*size+size-1-i); lines_v.push(d2); }
+                for (let line of lines_v) {
+                    const vals = line.map(i => flatBoard[i]).filter(v => v !== null);
+                    const s = vals.reduce((a,b) => a+b, 0);
+                    if (s > magicConst || (vals.length === size && s !== magicConst)) { isValid = false; break; }
+                }
+
+                if (isValid) {
+                    if (isSoundEnabled) audioEngine.playNote(numToTry);
+                    solver.filledCount++;
+                    setStats(prev => ({ ...prev, attempts: prev.attempts + 1 }));
+                } else {
+                    setDynamicHighlight({ r, c, type: 'backtrack' });
+                    setDynamicDesc(`Failed: Conflict at (${r},${c})`);
+                    flatBoard[currentFrame.cellIdx] = null;
+                    used[numToTry] = false;
+                    setStats(prev => ({ ...prev, attempts: prev.attempts + 1 }));
+                }
+            } else {
+                // Backtrack
+                stack[solver.filledCount] = null;
+                solver.filledCount--;
+                if (solver.filledCount > 0) {
+                    const prevFrame = stack[solver.filledCount];
+                    const prevVal = flatBoard[prevFrame.cellIdx];
+                    used[prevVal] = false;
+                    setDynamicHighlight({ r: Math.floor(prevFrame.cellIdx/size), c: prevFrame.cellIdx%size, type: 'backtrack' });
+                    setDynamicDesc(`Backtrack: Removing ${prevVal}...`);
+                    flatBoard[prevFrame.cellIdx] = null;
+                }
+            }
+
+            const newBoard2D = [];
+            for (let qr = 0; qr < size; qr++) newBoard2D.push(flatBoard.slice(qr * size, (qr + 1) * size));
+            setPracticeBoard(newBoard2D);
+        // Unified Speed: Using playbackDelay directly without dividers
+        }, playbackDelay);
     }
 
     return () => clearInterval(timerRef.current);
@@ -285,10 +368,8 @@ export const useMagicSquareGame = ({ size, mainMode, algoMode, steps, speed }) =
 
   const handlePracticeClick = (r, c, onSuccess, onError) => {
     if (mainMode !== 'practice' || practiceBoard[r][c] !== null || targetNum > size * size) return;
-    
     const correctStep = steps.find(s => s.val === targetNum);
     const correctPos = correctStep?.highlight;
-
     if (correctPos && correctPos.r === r && correctPos.c === c) {
       const newBoard = practiceBoard.map(row => [...row]);
       newBoard[r][c] = targetNum;
@@ -297,25 +378,17 @@ export const useMagicSquareGame = ({ size, mainMode, algoMode, steps, speed }) =
       setTargetNum(prev => prev + 1);
       if (isSoundEnabled) audioEngine.playNote(targetNum);
       if (onSuccess) onSuccess(correctStep);
-    } else {
-      if (onError) onError();
-    }
+    } else { if (onError) onError(); }
   };
 
   return {
-    currentStepIndex,
-    setCurrentStepIndex,
-    isPlaying,
-    setIsPlaying,
-    practiceBoard,
-    targetNum,
-    feedback,
-    setFeedback,
-    isSoundEnabled,
-    toggleSound,
-    resetPractice,
-    handlePracticeClick,
-    lastCorrectPos,
-    stats
+    currentStepIndex, setCurrentStepIndex,
+    isPlaying, setIsPlaying,
+    practiceBoard, targetNum,
+    feedback, setFeedback,
+    isSoundEnabled, toggleSound,
+    resetPractice, handlePracticeClick,
+    lastCorrectPos, stats,
+    dynamicDesc, dynamicHighlight
   };
 };
