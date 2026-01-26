@@ -1,113 +1,57 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useEffect } from 'react';
 import { 
   Play, Pause, RefreshCw, ChevronLeft, ChevronRight, SkipBack, SkipForward,
-  CheckCircle2, Target, ArrowDown, ArrowUp, ArrowRight, ArrowUpRight, Zap, LayoutGrid
+  CheckCircle2, Target, Zap,
+  Activity, Clock, Hash
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { audioEngine } from '../../utils/audio';
-import rulesData from './rules.json';
+import { useMagicSquareGame } from './useMagicSquareGame';
 
 export const MagicSquareCard = ({ 
   size, 
   mode, 
   steps, 
-  onPracticeCorrect,
-  speed 
+  speed = 500
 }) => {
-  const [currentStepIndex, setCurrentStepIndex] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const playbackDelay = Math.max(10, 1000 - speed);
-  const [practiceBoard, setPracticeBoard] = useState([]);
-  const [targetNum, setTargetNum] = useState(2);
-  const [lastCorrectPos, setLastCorrectPos] = useState({ r: 0, c: Math.floor(size/2) });
-  const [feedback, setFeedback] = useState(null);
-  const timerRef = useRef(null);
-  const prevStepRef = useRef(0);
-
-  // Initialize Learn/Practice state when size or steps change
-  useEffect(() => {
-    setCurrentStepIndex(0);
-    setIsPlaying(false);
-    resetPractice();
-  }, [size, steps]);
-
-  const resetPractice = () => {
-    const initialBoard = Array.from({ length: size }, () => Array(size).fill(null));
-    const startRow = 0;
-    const startCol = Math.floor(size / 2);
-    initialBoard[startRow][startCol] = 1;
-    setPracticeBoard(initialBoard);
-    setTargetNum(2);
-    setLastCorrectPos({ r: startRow, c: startCol });
-    setFeedback(null);
-  };
-
-  // Playback Loop
-  useEffect(() => {
-    if (isPlaying && mode === 'learn' && steps && steps.length > 0) {
-      timerRef.current = setInterval(() => {
-        setCurrentStepIndex(prev => {
-          if (prev < steps.length - 1) {
-            const next = prev + 1;
-            if (steps[next] && steps[next].val) {
-                audioEngine.playNote(steps[next].val);
-            }
-            return next;
-          }
-          setIsPlaying(false);
-          return prev;
-        });
-      }, playbackDelay);
-    } else {
-      clearInterval(timerRef.current);
-    }
-    return () => clearInterval(timerRef.current);
-  }, [isPlaying, steps, playbackDelay, mode]);
-
-  const handlePracticeClick = (r, c) => {
-    if (practiceBoard[r][c] !== null || targetNum > size * size) return;
-
-    const correctStep = steps.find(s => s.val === targetNum);
-    const correctPos = correctStep ? correctStep.highlight : null;
-
-    if (correctPos && correctPos.r === r && correctPos.c === c) {
-        const newBoard = practiceBoard.map(row => [...row]);
-        newBoard[r][c] = targetNum;
-        setPracticeBoard(newBoard);
-        setLastCorrectPos({ r, c });
-        setTargetNum(prev => prev + 1);
-        audioEngine.playNote(targetNum);
-        setFeedback({ type: 'success', msg: correctStep.desc, icon: CheckCircle2 });
-        setTimeout(() => setFeedback(null), 1000);
-    } else {
-        let hint = "Up 1, Right 1";
-        let Icon = Target;
-        const nextRow = (lastCorrectPos.r - 1 + size) % size;
-        const nextCol = (lastCorrectPos.c + 1) % size;
-        
-        if (practiceBoard[nextRow][nextCol] !== null) { hint = "Blocked -> Down"; Icon = ArrowDown; }
-        else if (lastCorrectPos.r === 0) { hint = "Top Wrap"; Icon = ArrowUp; }
-        else if (lastCorrectPos.c === size - 1) { hint = "Right Wrap"; Icon = ArrowRight; }
-        
-        setFeedback({ type: 'error', msg: hint, icon: Icon });
-    }
-  };
+  const {
+    currentStepIndex, setCurrentStepIndex,
+    isPlaying, setIsPlaying,
+    practiceBoard, targetNum,
+    setFeedback,
+    isSoundEnabled, toggleSound,
+    resetPractice, handlePracticeClick,
+    stats
+  } = useMagicSquareGame({ size, mode, steps, speed });
 
   const currentStep = steps[currentStepIndex] || { board: [], desc: "" };
-  const { board: learnBoard, highlight, type } = currentStep;
-  const isComplete = mode === 'learn' ? type === 'complete' : targetNum > size * size;
+  const { board: learnBoard, highlight } = currentStep;
+  const isComplete = mode === 'learn' ? currentStep.type === 'complete' : targetNum > size * size;
   const magicConstant = (size * (size * size + 1)) / 2;
 
-  // --- Dynamic Sizing ---
-  // Base size for the grid area is roughly 240px to 320px
+  // Sound effect for completion
+  useEffect(() => {
+    if (isComplete && isSoundEnabled) audioEngine.playSuccess();
+  }, [isComplete, isSoundEnabled]);
+
+  const onCellClick = (r, c) => {
+    handlePracticeClick(
+      r, c,
+      (correctStep) => {
+        setFeedback({ type: 'success', msg: correctStep.desc, icon: CheckCircle2 });
+        setTimeout(() => setFeedback(null), 1000);
+      },
+      () => {
+        setFeedback({ type: 'error', msg: "Wrong", icon: Target });
+        setTimeout(() => setFeedback(null), 1000);
+      }
+    );
+  };
+
   const getCellSize = () => {
-    if (size <= 3) return "w-16 h-16 text-2xl"; // 3x3: Large
-    if (size <= 5) return "w-12 h-12 text-lg";  // 5x5: Medium
-    if (size <= 7) return "w-9 h-9 text-xs";    // 7x7: Small
-    if (size <= 11) return "w-6 h-6 text-[8px]"; // 11x11: Tiny
-    if (size <= 13) return "w-5 h-5 text-[6px]"; // 13x13
-    return "w-4 h-4 text-[5px]"; // 15+ : Minimal
+    if (size <= 3) return "w-16 h-16 text-2xl";
+    if (size <= 5) return "w-12 h-12 text-lg";
+    return "w-8 h-8 text-xs";
   };
 
   const getGapSize = () => {
@@ -118,225 +62,205 @@ export const MagicSquareCard = ({
 
   return (
     <div className={cn(
-      "bg-slate-800/40 backdrop-blur-md border rounded-2xl p-4 flex flex-col shadow-xl transition-all group overflow-hidden",
+      "bg-slate-800/40 backdrop-blur-md border rounded-xl p-4 flex flex-col shadow-xl transition-all group overflow-hidden",
       isComplete ? "border-emerald-500/50 bg-emerald-500/5" : "border-slate-700"
     )}>
       {/* Header */}
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex justify-between items-center mb-4 min-h-[32px]">
         <div className="flex items-center gap-2">
-          <h3 className="text-xs font-bold text-emerald-300 uppercase tracking-widest">{size}x{size} Grid</h3>
+            <h3 className={cn("text-xs font-bold uppercase tracking-widest", mode === 'brute' ? "text-indigo-300" : "text-emerald-300")}>
+                {mode === 'brute' ? 'Brute Force' : `${size}x${size} Grid`}
+            </h3>
         </div>
+        
         <div className="flex items-center gap-1.5">
-           <span className="text-[10px] font-mono text-slate-500">M={magicConstant}</span>
+           {/* Learn/Practice Mode: Show M=15 and Sound Toggle */}
+           {mode !== 'brute' && (
+             <>
+                <span className="text-[10px] font-mono text-slate-500 mr-2">M={magicConstant}</span>
+                <button 
+                  onClick={(e) => { e.stopPropagation(); toggleSound(); }} 
+                  className={cn("p-1.5 rounded-lg transition-colors", isSoundEnabled ? "bg-slate-700 text-emerald-400" : "bg-transparent text-slate-600 hover:bg-slate-800")}
+                  title="Sound Toggle"
+                >
+                  <Zap size={12} fill="currentColor" />
+                </button>
+             </>
+           )}
+           
+           {/* Brute Force Mode: Show ONLY Complexity Badge and Play Button (Sorting Style) */}
+           {mode === 'brute' && (
+             <>
+               <span className="text-[9px] bg-slate-700/50 text-indigo-300/80 px-1.5 py-1 rounded font-mono border border-white/5">
+                 O(n!)
+               </span>
+
+               <div className="flex items-center">
+                 {isPlaying ? (
+                   <button 
+                     onClick={() => setIsPlaying(false)}
+                     className="p-1.5 rounded-lg bg-rose-500/20 text-rose-400 hover:bg-rose-500/30 transition-all active:scale-95 border border-rose-500/20"
+                   >
+                     <div className="w-3 h-3 bg-current rounded-sm" />
+                   </button>
+                 ) : (
+                   <button 
+                     onClick={() => isComplete ? resetPractice() : setIsPlaying(true)}
+                     className={cn(
+                       "p-1.5 rounded-lg transition-all active:scale-95 border",
+                       isComplete 
+                         ? "bg-slate-700 text-slate-300 border-slate-600" 
+                         : "bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 border-emerald-500/20"
+                     )}
+                   >
+                     {isComplete ? <RefreshCw size={14} /> : <Play size={14} fill="currentColor" />}
+                   </button>
+                 )}
+               </div>
+             </>
+           )}
         </div>
       </div>
 
-      {/* Board Area with Sums */}
+      {/* Board */}
       <div className="flex-1 flex flex-col items-center justify-center min-h-[220px] relative p-2">
-        
-          {/* Main Grid Row Wrapper */}
-          <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-1">
           {(mode === 'learn' ? learnBoard : practiceBoard).map((row, r) => {
             const rowSum = row.reduce((a, b) => a + (b || 0), 0);
             const isRowComplete = rowSum === magicConstant && row.every(v => v !== null);
-
-            // Extract height class from getCellSize to match row height
             const cellClasses = getCellSize();
             const heightClass = cellClasses.split(' ').find(c => c.startsWith('h-')) || "h-10";
 
             return (
               <div key={`row-${r}`} className="flex items-center gap-1">
-                {/* Row Cells */}
-                <div 
-                   className={cn(
-                     "grid gap-1", 
-                     getGapSize()
-                   )}
-                   style={{ gridTemplateColumns: `repeat(${size}, minmax(0, 1fr))` }}
-                >
+                 <div className={cn("grid gap-1", getGapSize())} style={{ gridTemplateColumns: `repeat(${size}, minmax(0, 1fr))` }}>
                   {row.map((v, c) => {
-                    const isHighlight = mode === 'learn' && highlight?.r === r && highlight?.c === c;
-                    
-                    // Success Visualization logic
-                    let successColor = "";
-                    if (isComplete) {
-                        if (r === c) successColor = "ring-2 ring-amber-400/50 bg-amber-400/10";
-                        else if (r + c === size - 1) successColor = "ring-2 ring-amber-400/50 bg-amber-400/10";
-                        else if (r % 2 === 0) successColor = "bg-rose-500/10 text-rose-300"; 
-                        else successColor = "bg-cyan-500/10 text-cyan-300";
-                    }
+                     const isHighlight = mode === 'learn' && highlight?.r === r && highlight?.c === c;
+                     let successColor = "";
+                     let successBorder = "";
+                     
+                     if (isComplete) {
+                         // Reference Screenshot Logic:
+                         const isCorner = (r===0 || r===size-1) && (c===0 || c===size-1);
+                         const isCenter = r === Math.floor(size/2) && c === Math.floor(size/2);
+                         
+                         if (isCorner || isCenter) {
+                             successBorder = "border-2 border-amber-400/80";
+                             successColor = "text-white";
+                         } else if (c === Math.floor(size/2)) {
+                             successColor = "text-pink-300 bg-pink-900/20";
+                             successBorder = "border border-pink-500/30";
+                         } else {
+                             successColor = "text-sky-300 bg-sky-900/40";
+                             successBorder = "border border-sky-500/30";
+                         }
+                     }
 
-                    return (
-                      <div
-                        key={`${r}-${c}`}
-                        onClick={() => mode === 'practice' && handlePracticeClick(r, c)}
-                        className={cn(
-                          "flex items-center justify-center rounded-md font-bold transition-all relative overflow-hidden",
-                          cellClasses, 
-                          v ? (isComplete ? "text-white" : "text-emerald-50") : "text-transparent",
-                          !isComplete && (v ? "bg-emerald-900/40 border border-emerald-500/20" : "bg-slate-800/50 border border-slate-700/30"),
-                          isComplete && !successColor && "bg-slate-800 border border-slate-700",
-                          successColor,
-                          isHighlight && "ring-2 ring-emerald-400 z-10",
-                          mode === 'practice' && !v && !isComplete && "cursor-pointer hover:bg-white/5"
-                        )}
-                      >
-                        {v || ''}
-                      </div>
-                    );
+                     return (
+                        <div
+                          key={`${r}-${c}`}
+                          onClick={() => mode === 'practice' && onCellClick(r, c)}
+                          className={cn(
+                            "flex items-center justify-center rounded-md font-bold transition-all relative overflow-hidden",
+                            cellClasses, 
+                            v ? (+v > 0) ? (isComplete ? "" : "text-emerald-50") : "text-transparent" : "text-transparent",
+                            !isComplete && v ? "bg-emerald-900/40 border border-emerald-500/20" : (!isComplete && "bg-slate-800/50 border border-slate-700/30"),
+                            isComplete && successColor,
+                            isComplete ? (successBorder || "border border-transparent") : "",
+                            isHighlight && "ring-2 ring-emerald-400 z-10"
+                          )}
+                        >
+                          {v || ''}
+                        </div>
+                     );
                   })}
-                </div>
-                
-                {/* Row Sum Indicator - Height Matched */}
-                <div className={cn(
+                 </div>
+                 {/* Row Sum Indicator - Solid Blue Style */}
+                 <div className={cn(
                   "flex items-center justify-center rounded px-1.5 min-w-[3.5ch] font-mono text-xs font-bold transition-opacity duration-700",
                   heightClass,
-                  isRowComplete ? "bg-sky-500/20 text-sky-300 border border-sky-500/30" : "bg-slate-700/40 text-slate-400 border border-slate-600/30",
-                  isComplete ? "opacity-100" : "opacity-0" // Hide until complete
-                )}>
-                  {rowSum > 0 ? rowSum : '-'}
-                </div>
+                  isRowComplete 
+                    ? "bg-sky-700 text-white border border-sky-600 shadow-sm" 
+                    : "bg-slate-700/40 text-slate-400 border border-slate-600/30",
+                   isComplete ? "opacity-100" : "opacity-0"
+                 )}>
+                   {rowSum > 0 ? rowSum : '-'}
+                 </div>
               </div>
             );
           })}
-
-          {/* Bottom Column & Diagonal Sums */}
-          <div className={cn("flex items-center gap-1 transition-opacity duration-700", isComplete ? "opacity-100" : "opacity-0")}>
-             <div 
-               className={cn("grid gap-1", getGapSize())} 
-               style={{ gridTemplateColumns: `repeat(${size}, minmax(0, 1fr))` }}
-             >
-               {Array.from({ length: size }).map((_, c) => {
-                 const colSum = (mode === 'learn' ? learnBoard : practiceBoard).reduce((acc, row) => acc + (row[c] || 0), 0);
-                 const isColComplete = colSum === magicConstant && (mode === 'learn' ? learnBoard : practiceBoard).every(row => row[c] !== null);
-                 
-                 return (
-                   <div key={`col-sum-${c}`} className={cn(
-                     "h-6 flex items-center justify-center rounded font-mono text-xs font-bold", 
-                     getCellSize().split(' ')[0], 
-                     isColComplete ? "bg-sky-500/20 text-sky-300 border border-sky-500/30" : "bg-slate-700/40 text-slate-400 border border-slate-600/30"
-                   )}>
-                     {colSum > 0 ? colSum : '-'}
-                   </div>
-                 );
-               })}
-             </div>
-
-             {/* Main Diagonal Sum (\) - Bottom Right (Aligned with Row Sums) */}
-             <div className={cn(
-               "flex items-center justify-center rounded px-1.5 min-w-[3.5ch] font-mono text-xs font-bold h-6",
-               (() => {
-                 const currentBoard = mode === 'learn' ? learnBoard : practiceBoard;
-                 const mainDiagSum = currentBoard.reduce((acc, row, i) => acc + (row[i] || 0), 0);
-                 const isMainDiagComplete = mainDiagSum === magicConstant && currentBoard.every((row, i) => row[i] !== null);
-                 return isMainDiagComplete ? "bg-sky-500/20 text-sky-300 border border-sky-500/30" : "bg-slate-700/40 text-slate-400 border border-slate-600/30";
-               })()
-             )}>
-                {(() => {
-                  const currentBoard = mode === 'learn' ? learnBoard : practiceBoard;
-                  const sum = currentBoard.reduce((acc, row, i) => acc + (row[i] || 0), 0);
-                  return sum > 0 ? sum : '-';
-               })()}
-             </div>
-          </div>
         </div>
       </div>
 
-      {/* Feedback / Desc */}
-      <div className="mt-4 h-12 flex items-center justify-center px-2">
-         <AnimatePresence mode="wait">
-            {mode === 'learn' ? (
-              <motion.div
-                key={currentStepIndex}
-                initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }}
-                className="flex flex-col items-center gap-1"
-              >
-                {(() => {
-                  if (isComplete) {
-                      return (
-                        <div className="flex items-center justify-center text-amber-400 animate-pulse">
-                            <span className="text-lg font-black uppercase tracking-widest">Success!</span>
-                        </div>
-                      );
-                  }
-
-                  const sizeKey = `${size}x${size}`;
-                  const rule = rulesData[sizeKey]?.[currentStep.val];
-                  
-                  // Label ONLY
-                  if (rule) {
-                    return (
-                      <div className="flex items-center justify-center text-amber-400">
-                        <span className="text-base font-black uppercase tracking-tight">{rule.label}</span>
-                      </div>
-                    );
-                  }
-                  
-                  // Fallback for missing rules (should not happen for odd sizes now)
-                  return (
-                    <span className="text-sm font-bold text-emerald-200/80 text-center uppercase tracking-tight">
-                      {currentStep.desc}
-                    </span>
-                  );
-                })()}
-              </motion.div>
-            ) : feedback ? (
-              <motion.div
-                key={feedback.msg}
-                initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
-                className={cn(
-                  "flex items-center gap-1.5 text-[10px] font-bold px-3 py-1 rounded-full border",
-                  feedback.type === 'error' ? "bg-rose-500/20 text-rose-300 border-rose-500/30" : "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
-                )}
-              >
-                <feedback.icon size={12} /> {feedback.msg}
-              </motion.div>
-            ) : !isComplete ? (
-              <div className="flex flex-col items-center">
-                  <span className="text-[8px] text-slate-500 font-bold uppercase tracking-widest mb-0.5">Target</span>
-                  <span className="text-xl font-black text-white">{targetNum}</span>
-              </div>
-            ) : (
-                <div className="flex items-center gap-2 text-emerald-400 font-bold text-[10px] uppercase tracking-widest">
-                    <CheckCircle2 size={14} /> Solved!
+      {/* Footer Area */}
+      {mode === 'brute' ? (
+        <div className="grid grid-cols-3 gap-2 py-2 border-t border-slate-700/50 mt-2">
+            <div className="flex flex-col items-center">
+              <Activity size={14} className="text-rose-400 mb-1" />
+              <span className="text-[10px] text-slate-400 uppercase">Attempts</span>
+              <span className="text-sm font-mono text-slate-200">{stats?.attempts || 0}</span>
+            </div>
+            <div className="flex flex-col items-center">
+              <Hash size={14} className="text-amber-400 mb-1" />
+              <span className="text-[10px] text-slate-400 uppercase">Target</span>
+              <span className="text-sm font-mono text-slate-200">{magicConstant}</span>
+            </div>
+            <div className="flex flex-col items-center">
+              <Clock size={14} className="text-sky-400 mb-1" />
+              <span className="text-[10px] text-slate-400 uppercase">Time</span>
+              <span className="text-sm font-mono text-slate-200">{stats ? (stats.time / 1000).toFixed(2) : "0.00"}s</span>
+            </div>
+        </div>
+      ) : (
+        /* Learn & Practice Controls */
+        <>
+            <div className="mt-4 flex flex-col items-center gap-3">
+                <div className="h-6 flex items-center">
+                    {mode === 'learn' ? (
+                        <span className="text-[9px] font-bold text-emerald-400/80 uppercase tracking-wide">{currentStep.desc}</span>
+                    ) : (
+                        <span className="text-[9px] font-bold text-blue-400 uppercase">Target: {targetNum}</span>
+                    )}
                 </div>
-            )}
-         </AnimatePresence>
-      </div>
+            </div>
 
-      {/* Local Controls (Learn Only) */}
-      <div className="mt-4 pt-4 border-t border-slate-700/50 flex items-center justify-between gap-4">
-         {mode === 'learn' ? (
-           <div className="flex items-center justify-between w-full">
-              <div className="flex gap-1">
-                <button onClick={() => setCurrentStepIndex(0)} className="p-1.5 rounded-md hover:bg-white/5 text-slate-500" title="Start"><SkipBack size={14} /></button>
-                <button onClick={() => setCurrentStepIndex(p => Math.max(0, p-1))} className="p-1.5 rounded-md hover:bg-white/5 text-slate-500"><ChevronLeft size={14} /></button>
-              </div>
-              
-              <button 
-                onClick={() => isComplete ? setCurrentStepIndex(0) : setIsPlaying(!isPlaying)}
-                className={cn(
-                    "w-10 h-10 flex items-center justify-center rounded-xl text-white shadow-lg transition-all",
-                    isComplete ? "bg-slate-600" : isPlaying ? "bg-amber-500 shadow-amber-500/20" : "bg-emerald-600 shadow-emerald-500/20 text-emerald-50"
+            <div className="flex items-center justify-between w-full border-t border-slate-700/50 pt-3 mt-auto">
+                {mode === 'practice' ? (
+                    <button onClick={resetPractice} className="w-full py-2 bg-slate-700/50 hover:bg-slate-700 rounded-lg text-[10px] font-bold text-slate-300 flex items-center justify-center gap-2 transition-all">
+                        <RefreshCw size={12} /> Reset
+                    </button>
+                ) : (
+                    <div className="flex items-center justify-between w-full">
+                        <div className="flex gap-1 w-16">
+                            {mode === 'learn' && (
+                                <>
+                                    <button onClick={() => setCurrentStepIndex(0)} className="p-1.5 text-slate-500 hover:text-white"><SkipBack size={14} /></button>
+                                    <button onClick={() => setCurrentStepIndex(p => Math.max(0, p-1))} className="p-1.5 text-slate-500 hover:text-white"><ChevronLeft size={14} /></button>
+                                </>
+                            )}
+                        </div>
+                        <button 
+                            onClick={() => isComplete ? setCurrentStepIndex(0) : setIsPlaying(!isPlaying)}
+                            className={cn(
+                                "w-10 h-10 flex items-center justify-center rounded-xl text-white shadow-lg transition-all active:scale-95",
+                                isComplete ? "bg-slate-600" : isPlaying ? "bg-amber-500 shadow-amber-500/30" : "bg-emerald-600 shadow-emerald-500/20"
+                            )}
+                        >
+                            {isComplete ? <RefreshCw size={18} /> : isPlaying ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" className="ml-0.5" />}
+                        </button>
+                        <div className="flex gap-1 w-16 justify-end">
+                            {mode === 'learn' && (
+                                <>
+                                    <button onClick={() => setCurrentStepIndex(p => Math.min(steps.length-1, p+1))} className="p-1.5 text-slate-500 hover:text-white"><ChevronRight size={14} /></button>
+                                    <button onClick={() => setCurrentStepIndex(steps.length-1)} className="p-1.5 text-slate-500 hover:text-white"><SkipForward size={14} /></button>
+                                </>
+                            )}
+                        </div>
+                    </div>
                 )}
-              >
-                {isComplete ? <RefreshCw size={18} /> : isPlaying ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" className="ml-0.5" />}
-              </button>
-
-              <div className="flex gap-1">
-                <button onClick={() => setCurrentStepIndex(p => Math.min(steps.length-1, p+1))} className="p-1.5 rounded-md hover:bg-white/5 text-slate-500"><ChevronRight size={14} /></button>
-                <button onClick={() => setCurrentStepIndex(steps.length-1)} className="p-1.5 rounded-md hover:bg-white/5 text-slate-500" title="End"><SkipForward size={14} /></button>
-              </div>
-           </div>
-         ) : (
-           <button 
-             onClick={resetPractice}
-             className="w-full py-2 bg-slate-700/50 hover:bg-slate-700 rounded-xl text-[10px] font-bold text-slate-400 hover:text-white transition-all flex items-center justify-center gap-2"
-           >
-             <RefreshCw size={12} /> Reset Practice
-           </button>
-         )}
-      </div>
+            </div>
+        </>
+      )}
     </div>
   );
 };

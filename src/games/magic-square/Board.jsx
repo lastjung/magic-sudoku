@@ -25,19 +25,20 @@ const MagicControlCard = ({
       </div>
 
       {/* Mode Switcher */}
-      <div className="flex p-1 bg-slate-900/50 rounded-lg border border-white/5">
+      <div className="grid grid-cols-3 gap-1 p-1 bg-slate-900/50 rounded-lg border border-white/5">
         {[
             { id: 'learn', label: 'LEARN', icon: BookOpen },
-            { id: 'practice', label: 'PRACTICE', icon: GraduationCap }
+            { id: 'practice', label: 'PRACTICE', icon: GraduationCap },
+            { id: 'brute', label: 'BRUTE', icon: Zap }
         ].map(m => (
             <button 
                 key={m.id}
                 onClick={() => setMode(m.id)}
                 className={cn(
-                    "flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-[10px] font-black tracking-widest transition-all",
+                    "flex items-center justify-center gap-1.5 py-2 rounded-md text-[10px] font-black tracking-widest transition-all",
                     mode === m.id 
                     ? "bg-emerald-600 text-white shadow-lg shadow-emerald-500/20" 
-                    : "text-slate-500 hover:text-white"
+                    : "bg-transparent text-slate-500 hover:text-white hover:bg-white/5"
                 )}
             >
                 <m.icon size={12} /> {m.label}

@@ -12,7 +12,7 @@ export const ControlPanel = ({
   setSpeed, 
   onRandomize 
 }) => {
-  const [soundEnabled, setSoundEnabled] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(audioEngine.enabled);
 
   const toggleSound = () => {
     const next = !soundEnabled;
@@ -68,10 +68,9 @@ export const ControlPanel = ({
           </div>
         </div>
 
-        {/* Right: Controls (Only visible when sorting is active) */}
+        {/* Right: Controls (Always Visible) */}
         <div className={cn(
-          "flex items-center gap-6 bg-slate-800/50 px-6 py-3 rounded-2xl border border-white/5 transition-all",
-          activeTab !== 'sorting' && "opacity-20 pointer-events-none grayscale"
+          "flex items-center gap-6 bg-slate-800/50 px-6 py-3 rounded-2xl border border-white/5 transition-all"
         )}>
           {/* Sound Toggle */}
           <button 
