@@ -10,6 +10,10 @@ export default function SudokuBoard() {
     const { initial, solution } = generateSudoku('easy');
     return { initial, current: initial.map(row => [...row]), solution };
   });
+  const [selected, setSelected] = useState(null);
+  const [mistakes, setMistakes] = useState(0);
+  const [isSolved, setIsSolved] = useState(false);
+  const [noteMode, setNoteMode] = useState(false);
 
   const startNewGame = useCallback(() => {
     const { initial, solution } = generateSudoku(difficulty);
@@ -86,7 +90,7 @@ export default function SudokuBoard() {
         <div className="p-4 sm:p-6 border-b border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4">
            {/* Left: Title & Icon */}
            <div className="flex items-center gap-3">
-             <div className="p-2 rounded-xl bg-rose-500/10 text-rose-400">
+             <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400">
                <LayoutGrid size={24} />
              </div>
              <div>
@@ -105,7 +109,7 @@ export default function SudokuBoard() {
                       className={cn(
                           "px-3 py-1.5 rounded-md text-xs font-bold capitalize transition-all",
                            difficulty === d 
-                              ? "bg-rose-600 text-white shadow-lg shadow-rose-500/20" 
+                              ? "bg-amber-600 text-white shadow-lg shadow-amber-500/20" 
                               : "text-slate-400 hover:text-white hover:bg-white/5"
                       )}
                    >
@@ -125,7 +129,7 @@ export default function SudokuBoard() {
           
           {/* Left: Sudoku Grid */}
           <div className="relative group">
-             <div className="absolute -inset-4 bg-gradient-to-r from-rose-500/20 to-orange-500/20 rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+             <div className="absolute -inset-4 bg-gradient-to-r from-amber-500/20 to-yellow-500/20 rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
              
              <div className="relative bg-slate-900 p-3 rounded-xl border border-slate-700 shadow-2xl">
                 <div className="grid grid-cols-9 gap-[1px] bg-slate-600 border border-slate-600">
@@ -142,10 +146,10 @@ export default function SudokuBoard() {
                                     className={cn(
                                         "w-9 h-9 sm:w-11 sm:h-11 flex items-center justify-center text-lg sm:text-xl cursor-pointer transition-colors select-none",
                                         "bg-slate-800 hover:bg-slate-700/90",
-                                        isInitial ? "font-bold text-slate-200 bg-slate-800/60" : "text-rose-300 font-medium",
-                                        isSelected ? "bg-rose-600/30 ring-2 ring-rose-500 inset-0 z-10" : "",
+                                        isInitial ? "font-bold text-slate-200 bg-slate-800/60" : "text-amber-300 font-medium",
+                                        isSelected ? "bg-amber-600/30 ring-2 ring-amber-500 inset-0 z-10" : "",
                                         isError ? "text-red-400 bg-red-900/20" : "",
-                                        (selected && game.current[selected.r][selected.c] === val && val !== 0 && !isSelected) ? "bg-rose-900/40" : "",
+                                        (selected && game.current[selected.r][selected.c] === val && val !== 0 && !isSelected) ? "bg-amber-900/40" : "",
                                          (c % 3 === 2 && c !== 8) && "border-r-2 border-r-slate-500/50",
                                          (r % 3 === 2 && r !== 8) && "border-b-2 border-b-slate-500/50"
                                     )}
@@ -204,7 +208,7 @@ export default function SudokuBoard() {
                       className={cn(
                         "flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border transition-all text-xs font-bold uppercase",
                         noteMode 
-                            ? "bg-rose-600 text-white border-rose-500 shadow-lg shadow-rose-500/20" 
+                            ? "bg-amber-600 text-white border-amber-500 shadow-lg shadow-amber-500/20" 
                             : "bg-slate-800/50 text-slate-400 border-slate-700 hover:bg-slate-700 hover:text-white"
                       )}
                     >
@@ -213,7 +217,7 @@ export default function SudokuBoard() {
 
                    <button 
                       onClick={startNewGame}
-                      className="p-3 rounded-xl bg-rose-600/10 text-rose-400 border border-rose-500/20 hover:bg-rose-600 hover:text-white transition-all"
+                      className="p-3 rounded-xl bg-amber-600/10 text-amber-400 border border-amber-500/20 hover:bg-amber-600 hover:text-white transition-all"
                       title="New Game"
                     >
                        <RefreshCw size={18} />
@@ -230,13 +234,13 @@ export default function SudokuBoard() {
             animate={{ scale: 1 }}
             className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-50 rounded-3xl"
           >
-              <div className="bg-slate-900 p-8 rounded-2xl border-2 border-rose-500 text-center shadow-2xl">
-                  <h3 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-rose-400 to-orange-400 mb-4">
+              <div className="bg-slate-900 p-8 rounded-2xl border-2 border-amber-500 text-center shadow-2xl">
+                  <h3 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-yellow-400 mb-4">
                       Solved!
                   </h3>
                   <button 
                     onClick={startNewGame}
-                    className="px-6 py-3 bg-rose-600 hover:bg-rose-500 text-white rounded-lg font-bold transition-colors"
+                    className="px-6 py-3 bg-amber-600 hover:bg-amber-500 text-white rounded-lg font-bold transition-colors"
                   >
                       Play Again
                   </button>

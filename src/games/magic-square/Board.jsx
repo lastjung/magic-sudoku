@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { MagicSquareCard } from './MagicSquareCard';
 import { generateMagicSquareSteps } from './logic';
-import { BookOpen, GraduationCap, LayoutGrid, Zap, RotateCcw } from 'lucide-react';
+import { BookOpen, GraduationCap, LayoutGrid, Zap, RotateCcw, Sliders } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
 const ALL_8_SIZES = [3, 5, 7, 9];
@@ -11,9 +11,18 @@ const MagicControlCard = ({
     toggleSize, 
     selectAll, 
     deselectAll, 
-    mode, 
-    setMode 
+    mainMode, 
+    setMainMode,
+    algoMode,
+    setAlgoMode
 }) => {
+  const simulationAlgos = [
+    { id: 'formula', label: 'FORMULA', icon: BookOpen },
+    { id: 'backtrack', label: 'BACKTRACK', icon: RotateCcw },
+    { id: 'smart', label: 'SMART BT', icon: Zap },
+    { id: 'heuristic', label: 'HEURISTIC', icon: LayoutGrid },
+    { id: 'brute', label: 'BRUTE FORCE', icon: Sliders },
+  ];
   return (
     <div className="bg-slate-800/60 backdrop-blur-xl border border-emerald-500/30 rounded-xl p-4 flex flex-col gap-3 shadow-2xl relative overflow-hidden group h-[320px]">
       <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent pointer-events-none" />
@@ -24,19 +33,18 @@ const MagicControlCard = ({
         <h3 className="text-xs font-bold text-white uppercase tracking-widest">Logic Control</h3>
       </div>
 
-      {/* Mode Switcher */}
-      <div className="grid grid-cols-3 gap-1 p-1 bg-slate-900/50 rounded-lg border border-white/5">
+      {/* Mode Switcher (Main) */}
+      <div className="grid grid-cols-2 gap-1 p-1 bg-slate-900/50 rounded-lg border border-white/5">
         {[
-            { id: 'learn', label: 'LEARN', icon: BookOpen },
-            { id: 'practice', label: 'PRACTICE', icon: GraduationCap },
-            { id: 'brute', label: 'BRUTE', icon: Zap }
+            { id: 'simulation', label: 'SIMULATION', icon: Zap },
+            { id: 'practice', label: 'PRACTICE', icon: GraduationCap }
         ].map(m => (
             <button 
                 key={m.id}
-                onClick={() => setMode(m.id)}
+                onClick={() => setMainMode(m.id)}
                 className={cn(
                     "flex items-center justify-center gap-1.5 py-2 rounded-md text-[10px] font-black tracking-widest transition-all",
-                    mode === m.id 
+                    mainMode === m.id 
                     ? "bg-emerald-600 text-white shadow-lg shadow-emerald-500/20" 
                     : "bg-transparent text-slate-500 hover:text-white hover:bg-white/5"
                 )}
@@ -45,6 +53,30 @@ const MagicControlCard = ({
             </button>
         ))}
       </div>
+
+      {/* Sub-Mode (Algorithms) - only visible if simulation is selected */}
+      {mainMode === 'simulation' && (
+        <div className="flex flex-col gap-2 p-2 bg-slate-900/30 rounded-lg border border-white/5">
+          <span className="text-[9px] font-bold text-slate-500 uppercase tracking-tighter ml-1">Algorithm</span>
+          <div className="grid grid-cols-2 gap-1.5">
+            {simulationAlgos.map(algo => (
+              <button 
+                key={algo.id}
+                onClick={() => setAlgoMode(algo.id)}
+                className={cn(
+                  "flex items-center gap-2 px-2 py-2 rounded-md transition-all text-[9px] font-bold",
+                  algoMode === algo.id 
+                    ? "bg-emerald-500/20 text-emerald-300 ring-1 ring-emerald-500/50" 
+                    : "text-slate-500 hover:text-slate-300 hover:bg-white/5"
+                )}
+              >
+                <algo.icon size={10} />
+                {algo.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Action Buttons */}
       <div className="flex gap-2">
@@ -101,7 +133,8 @@ const MagicControlCard = ({
 
 export default function MagicSquareBoard({ speed }) {
   const [activeSizes, setActiveSizes] = useState(new Set(ALL_8_SIZES));
-  const [mode, setMode] = useState('learn'); // 'learn' | 'practice'
+  const [mainMode, setMainMode] = useState('simulation'); // 'simulation' | 'practice'
+  const [algoMode, setAlgoMode] = useState('formula'); // for simulation
 
   const toggleSize = (size) => {
     setActiveSizes(prev => {
@@ -140,7 +173,8 @@ export default function MagicSquareBoard({ speed }) {
           <MagicSquareCard 
             key={size}
             size={size}
-            mode={mode}
+            mainMode={mainMode}
+            algoMode={algoMode}
             steps={stepsData[size]}
             speed={speed}
           />
@@ -152,8 +186,10 @@ export default function MagicSquareBoard({ speed }) {
           toggleSize={toggleSize}
           selectAll={selectAll}
           deselectAll={deselectAll}
-          mode={mode}
-          setMode={setMode}
+          mainMode={mainMode}
+          setMainMode={setMainMode}
+          algoMode={algoMode}
+          setAlgoMode={setAlgoMode}
         />
 
         {/* Remaining Cards */}
@@ -161,7 +197,8 @@ export default function MagicSquareBoard({ speed }) {
           <MagicSquareCard 
             key={size}
             size={size}
-            mode={mode}
+            mainMode={mainMode}
+            algoMode={algoMode}
             steps={stepsData[size]}
             speed={speed}
           />

@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { audioEngine } from '../../utils/audio';
 
-export const useMagicSquareGame = ({ size, mode, steps, speed }) => {
+export const useMagicSquareGame = ({ size, mainMode, algoMode, steps, speed }) => {
+  // Map our new mode structure to internal simplified logic if needed
+  const mode = mainMode === 'simulation' ? (algoMode === 'formula' ? 'learn' : 'brute') : 'practice';
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [practiceBoard, setPracticeBoard] = useState([]);
@@ -19,13 +21,6 @@ export const useMagicSquareGame = ({ size, mode, steps, speed }) => {
   // Backtracking Solver State
   const solverRef = useRef(null);
 
-  // Initialize
-  useEffect(() => {
-    setCurrentStepIndex(0);
-    setIsPlaying(false);
-    resetPractice();
-  }, [size, steps, mode]);
-
   const resetPractice = () => {
     const initialBoard = Array.from({ length: size }, () => Array(size).fill(null));
     const startRow = 0;
@@ -40,6 +35,13 @@ export const useMagicSquareGame = ({ size, mode, steps, speed }) => {
     solverRef.current = null;
   };
 
+  // Initialize
+  useEffect(() => {
+    setCurrentStepIndex(0);
+    setIsPlaying(false);
+    resetPractice();
+  }, [size, steps, mainMode, algoMode]);
+
   // Playback & Logic Loop
   useEffect(() => {
     if (!isPlaying) {
@@ -47,39 +49,36 @@ export const useMagicSquareGame = ({ size, mode, steps, speed }) => {
       return;
     }
 
-    if (mode === 'brute') {
-        if (!solverRef.current || stats.attempts === 0) {
-            startTimeRef.current = performance.now();
-            
-            // Number-based Backtracking initialization
-            // We want to place numbers 1, 2, 3... sequentially.
-            // But wait, the user said "Start screen same as learn" where 1 is at Top-Center.
-            // Should we respect that?
-            // "1번 어디에 놓을 꺼야?" -> "Random". User said "내가 한다는 게 아냐".
-            // So for Brute mode, we should probably start from scratch or start with 1 fixed?
-            // Let's assume we start from scratch (1 is not fixed) to show full brute force,
-            // OR fix 1 at Top-Center to reduce search space (make it look smarter).
-            // Let's fix 1 at Top-Center to match the "Start Screen" visual.
-            // No, user said "좋은 사각형에 놓는데" (System picks good spot).
-            // So we let system pick 1's spot too.
-            // But visually, the board starts with 1 at Top-Center.
-            // We'll clear the board first thing in the loop.
-
+    if (!solverRef.current || stats.attempts === 0) {
+        startTimeRef.current = performance.now();
+        if (mode === 'brute') {
             solverRef.current = {
                 board: Array(size * size).fill(null), 
-                currentNum: 1, // Start with placing 1
-                stack: [], // Stores { availablePositions: [], triedIndex: -1 } for each number
+                currentNum: 1, 
+                stack: [], 
                 backtracking: false
             };
+        } else {
+            solverRef.current = { type: 'learn' };
         }
     }
 
     if (mode === 'learn') {
       timerRef.current = setInterval(() => {
+        const now = performance.now();
+        const elapsed = Math.floor(now - startTimeRef.current);
+        setStats(prev => ({ ...prev, time: elapsed }));
+
         setCurrentStepIndex(prev => {
           if (prev < steps.length - 1) {
             const next = prev + 1;
-            if (steps[next]?.val && isSoundEnabled) audioEngine.playNote(steps[next].val);
+            const nextStep = steps[next];
+            if (nextStep?.val && isSoundEnabled) audioEngine.playNote(nextStep.val);
+            
+            // Update practiceBoard to sync with steps board
+            if (nextStep?.board) setPracticeBoard(nextStep.board);
+            setStats(s => ({ ...s, attempts: next }));
+            
             return next;
           }
           setIsPlaying(false);
@@ -101,30 +100,64 @@ export const useMagicSquareGame = ({ size, mode, steps, speed }) => {
 
         // If we successfully placed up to N^2:
         if (solver.currentNum > size * size) {
-            setIsPlaying(false);
-            setTargetNum(size * size + 999);
-            if (isSoundEnabled) audioEngine.playSuccess();
-            return;
+            // Brute Force needs a final check since it doesn't prune
+            let isFinalValid = true;
+            if (algoMode === 'brute') {
+                // Check all sums
+                for (let i = 0; i < size; i++) {
+                    let rS = 0, cS = 0;
+                    for (let j = 0; j < size; j++) {
+                        rS += board[i * size + j];
+                        cS += board[j * size + i];
+                    }
+                    if (rS !== magicConst || cS !== magicConst) isFinalValid = false;
+                }
+                let d1 = 0, d2 = 0;
+                for (let i = 0; i < size; i++) {
+                    d1 += board[i * size + i];
+                    d2 += board[i * size + (size - 1 - i)];
+                }
+                if (d1 !== magicConst || d2 !== magicConst) isFinalValid = false;
+            }
+
+            if (isFinalValid) {
+                setIsPlaying(false);
+                setTargetNum(size * size + 999);
+                if (isSoundEnabled) audioEngine.playSuccess();
+                return;
+            } else {
+                // Brute force failed, backtrack from the end
+                solver.currentNum = size * size;
+                // fall through to backtracking logic
+            }
         }
 
         // Prepare context for currentNum if needed
         let stackFrame = stack[solver.currentNum];
         if (!stackFrame) {
-            // Find all empty cells
-            const emptyCells = [];
-            for (let i = 0; i < size * size; i++) {
-                if (board[i] === null) emptyCells.push(i);
+            let candidates = [];
+            
+            // Special Rule: For number '1', restrict positions to [1, 2, 5] as requested
+            if (solver.currentNum === 1) {
+                // Indices 1, 2, 5 (0-based)
+                // 1=(0,1), 2=(0,2), 5=(1,2)
+                const startCandidates = [1, 2, 5];
+                // Filter out any that might be occupied (though for 1, board is empty)
+                candidates = startCandidates.filter(idx => idx < size * size && board[idx] === null);
+            } else {
+                // For other numbers, try all empty cells
+                for (let i = 0; i < size * size; i++) {
+                    if (board[i] === null) candidates.push(i);
+                }
             }
             
-            // If "Good square", maybe we can heuristic sort?
-            // "너가 좋은 사각형에 놓는데" implies some smarts or randomness.
-            // Let's Shuffle for randomness.
-            for (let i = emptyCells.length - 1; i > 0; i--) {
+            // Randomize candidates
+            for (let i = candidates.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
-                [emptyCells[i], emptyCells[j]] = [emptyCells[j], emptyCells[i]];
+                [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
             }
             
-            stackFrame = { candidates: emptyCells, triedIndex: -1 };
+            stackFrame = { candidates, triedIndex: -1 };
             stack[solver.currentNum] = stackFrame;
         }
 
@@ -184,6 +217,42 @@ export const useMagicSquareGame = ({ size, mode, steps, speed }) => {
                 if (isValid && colFilled === size && colSum !== magicConst) isValid = false;
             }
 
+            // Check Diagonals (Smart BT and Heuristic only)
+            if (isValid && (algoMode === 'smart' || algoMode === 'heuristic')) {
+                // Main Diagonal
+                if (r === c) {
+                    let d1Sum = 0, d1Filled = 0;
+                    for (let i = 0; i < size; i++) {
+                        const val = board[i * size + i];
+                        if (val !== null) { d1Sum += val; d1Filled++; }
+                    }
+                    if (d1Sum > magicConst) isValid = false;
+                    if (isValid && d1Filled === size && d1Sum !== magicConst) isValid = false;
+                }
+                // Anti Diagonal
+                if (isValid && (r + c === size - 1)) {
+                    let d2Sum = 0, d2Filled = 0;
+                    for (let i = 0; i < size; i++) {
+                        const val = board[i * size + (size - 1 - i)];
+                        if (val !== null) { d2Sum += val; d2Filled++; }
+                    }
+                    if (d2Sum > magicConst) isValid = false;
+                    if (isValid && d2Filled === size && d2Sum !== magicConst) isValid = false;
+                }
+            }
+
+            // Pure Brute Force: NO PRUNING (except for total constant at the very end)
+            if (algoMode === 'brute') {
+                isValid = true; // Always try to place
+                if (solver.currentNum === size * size) {
+                   // Only check validity at the very last step
+                   // (Actually checking all rows/cols/diags)
+                   // We'll trust the success check above (currentNum > size*size) 
+                   // but we need to ensure it's a valid magic square.
+                   // So for pure brute force, we just let it fill and check at 103.
+                }
+            }
+
             if (isValid) {
                 // Success! Move to next number
                 // Silent on every step to avoid noise, only play rarely
@@ -205,7 +274,7 @@ export const useMagicSquareGame = ({ size, mode, steps, speed }) => {
     }
 
     return () => clearInterval(timerRef.current);
-  }, [isPlaying, mode, steps, playbackDelay, size, isSoundEnabled]);
+  }, [isPlaying, mainMode, algoMode, mode, steps, playbackDelay, size, isSoundEnabled]);
 
   const toggleSound = () => {
     const newState = !isSoundEnabled;
@@ -215,7 +284,7 @@ export const useMagicSquareGame = ({ size, mode, steps, speed }) => {
   };
 
   const handlePracticeClick = (r, c, onSuccess, onError) => {
-    if (mode !== 'practice' || practiceBoard[r][c] !== null || targetNum > size * size) return;
+    if (mainMode !== 'practice' || practiceBoard[r][c] !== null || targetNum > size * size) return;
     
     const correctStep = steps.find(s => s.val === targetNum);
     const correctPos = correctStep?.highlight;

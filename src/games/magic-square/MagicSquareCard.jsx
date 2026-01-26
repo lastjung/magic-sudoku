@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { 
   Play, Pause, RefreshCw, ChevronLeft, ChevronRight, SkipBack, SkipForward,
   CheckCircle2, Target, Zap,
@@ -10,7 +10,8 @@ import { useMagicSquareGame } from './useMagicSquareGame';
 
 export const MagicSquareCard = ({ 
   size, 
-  mode, 
+  mainMode, 
+  algoMode, 
   steps, 
   speed = 500
 }) => {
@@ -19,15 +20,34 @@ export const MagicSquareCard = ({
     isPlaying, setIsPlaying,
     practiceBoard, targetNum,
     setFeedback,
-    isSoundEnabled, toggleSound,
+    isSoundEnabled,
     resetPractice, handlePracticeClick,
     stats
-  } = useMagicSquareGame({ size, mode, steps, speed });
+  } = useMagicSquareGame({ size, mainMode, algoMode, steps, speed });
+
+  const mode = mainMode; // 'simulation' | 'practice'
 
   const currentStep = steps[currentStepIndex] || { board: [], desc: "" };
-  const { board: learnBoard, highlight } = currentStep;
-  const isComplete = mode === 'learn' ? currentStep.type === 'complete' : targetNum > size * size;
+  const { highlight } = currentStep;
+  const isComplete = mainMode === 'simulation' ? (algoMode === 'formula' ? currentStep?.type === 'complete' : targetNum > size * size) : targetNum > size * size;
   const magicConstant = (size * (size * size + 1)) / 2;
+
+  const colSums = useMemo(() => {
+    const sums = Array(size).fill(0);
+    const filled = Array(size).fill(0);
+    practiceBoard.forEach(row => {
+      row.forEach((v, c) => {
+        if (v !== null) {
+          sums[c] += v;
+          filled[c]++;
+        }
+      });
+    });
+    return sums.map((s, i) => ({ 
+      sum: s, 
+      isComplete: s === magicConstant && filled[i] === size 
+    }));
+  }, [practiceBoard, size, magicConstant]);
 
   // Sound effect for completion
   useEffect(() => {
@@ -68,31 +88,17 @@ export const MagicSquareCard = ({
       {/* Header */}
       <div className="flex justify-between items-center mb-4 min-h-[32px]">
         <div className="flex items-center gap-2">
-            <h3 className={cn("text-xs font-bold uppercase tracking-widest", mode === 'brute' ? "text-indigo-300" : "text-emerald-300")}>
-                {mode === 'brute' ? 'Brute Force' : `${size}x${size} Grid`}
+            <h3 className={cn("text-xs font-bold uppercase tracking-widest", mainMode === 'simulation' ? "text-indigo-300" : "text-emerald-300")}>
+                {mainMode === 'simulation' ? algoMode.replace(/-/g, ' ') : `${size}x${size} Practice`}
             </h3>
         </div>
         
         <div className="flex items-center gap-1.5">
-           {/* Learn/Practice Mode: Show M=15 and Sound Toggle */}
-           {mode !== 'brute' && (
+           {/* Simulation Mode: Show complexity and control */}
+           {mainMode === 'simulation' && (
              <>
-                <span className="text-[10px] font-mono text-slate-500 mr-2">M={magicConstant}</span>
-                <button 
-                  onClick={(e) => { e.stopPropagation(); toggleSound(); }} 
-                  className={cn("p-1.5 rounded-lg transition-colors", isSoundEnabled ? "bg-slate-700 text-emerald-400" : "bg-transparent text-slate-600 hover:bg-slate-800")}
-                  title="Sound Toggle"
-                >
-                  <Zap size={12} fill="currentColor" />
-                </button>
-             </>
-           )}
-           
-           {/* Brute Force Mode: Show ONLY Complexity Badge and Play Button (Sorting Style) */}
-           {mode === 'brute' && (
-             <>
-               <span className="text-[9px] bg-slate-700/50 text-indigo-300/80 px-1.5 py-1 rounded font-mono border border-white/5">
-                 O(n!)
+               <span className="text-[9px] bg-slate-700/50 text-indigo-300/80 px-1.5 py-1 rounded font-mono border border-white/5 mr-2">
+                 {algoMode === 'formula' ? 'O(n)' : algoMode === 'backtrack' ? 'O(n!)' : 'O(??)'}
                </span>
 
                <div className="flex items-center">
@@ -125,41 +131,39 @@ export const MagicSquareCard = ({
       {/* Board */}
       <div className="flex-1 flex flex-col items-center justify-center min-h-[220px] relative p-2">
         <div className="flex flex-col gap-1">
-          {(mode === 'learn' ? learnBoard : practiceBoard).map((row, r) => {
+          {practiceBoard.map((row, r) => {
             const rowSum = row.reduce((a, b) => a + (b || 0), 0);
             const isRowComplete = rowSum === magicConstant && row.every(v => v !== null);
             const cellClasses = getCellSize();
-            const heightClass = cellClasses.split(' ').find(c => c.startsWith('h-')) || "h-10";
 
             return (
-              <div key={`row-${r}`} className="flex items-center gap-1">
-                 <div className={cn("grid gap-1", getGapSize())} style={{ gridTemplateColumns: `repeat(${size}, minmax(0, 1fr))` }}>
-                  {row.map((v, c) => {
-                     const isHighlight = mode === 'learn' && highlight?.r === r && highlight?.c === c;
+              <div key={`row-${r}`} className={cn("flex items-center", getGapSize())}>
+                 {/* Cells */}
+                 {row.map((v, c) => {
+                     const isHighlight = algoMode === 'formula' && highlight?.r === r && highlight?.c === c;
                      let successColor = "";
                      let successBorder = "";
                      
                      if (isComplete) {
-                         // Reference Screenshot Logic:
-                         const isCorner = (r===0 || r===size-1) && (c===0 || c===size-1);
-                         const isCenter = r === Math.floor(size/2) && c === Math.floor(size/2);
-                         
-                         if (isCorner || isCenter) {
-                             successBorder = "border-2 border-amber-400/80";
-                             successColor = "text-white";
-                         } else if (c === Math.floor(size/2)) {
-                             successColor = "text-pink-300 bg-pink-900/20";
-                             successBorder = "border border-pink-500/30";
-                         } else {
-                             successColor = "text-sky-300 bg-sky-900/40";
-                             successBorder = "border border-sky-500/30";
-                         }
+                        const isCorner = (r===0 || r===size-1) && (c===0 || c===size-1);
+                        const isCenter = r === Math.floor(size/2) && c === Math.floor(size/2);
+                        
+                        if (isCorner || isCenter) {
+                            successBorder = "border-2 border-amber-400/80";
+                            successColor = "text-white";
+                        } else if (c === Math.floor(size/2)) {
+                            successColor = "text-pink-300 bg-pink-900/20";
+                            successBorder = "border border-pink-500/30";
+                        } else {
+                            successColor = "text-sky-300 bg-sky-900/40";
+                            successBorder = "border border-sky-500/30";
+                        }
                      }
 
                      return (
                         <div
                           key={`${r}-${c}`}
-                          onClick={() => mode === 'practice' && onCellClick(r, c)}
+                          onClick={() => mainMode === 'practice' && onCellClick(r, c)}
                           className={cn(
                             "flex items-center justify-center rounded-md font-bold transition-all relative overflow-hidden",
                             cellClasses, 
@@ -167,34 +171,64 @@ export const MagicSquareCard = ({
                             !isComplete && v ? "bg-emerald-900/40 border border-emerald-500/20" : (!isComplete && "bg-slate-800/50 border border-slate-700/30"),
                             isComplete && successColor,
                             isComplete ? (successBorder || "border border-transparent") : "",
-                            isHighlight && "ring-2 ring-emerald-400 z-10"
+                            isHighlight && mainMode === 'simulation' && algoMode === 'formula' && "ring-2 ring-emerald-400 z-10"
                           )}
                         >
                           {v || ''}
                         </div>
                      );
                   })}
-                 </div>
-                 {/* Row Sum Indicator - Solid Blue Style */}
-                 <div className={cn(
-                  "flex items-center justify-center rounded px-1.5 min-w-[3.5ch] font-mono text-xs font-bold transition-opacity duration-700",
-                  heightClass,
-                  isRowComplete 
-                    ? "bg-sky-700 text-white border border-sky-600 shadow-sm" 
-                    : "bg-slate-700/40 text-slate-400 border border-slate-600/30",
-                   isComplete ? "opacity-100" : "opacity-0"
-                 )}>
-                   {rowSum > 0 ? rowSum : '-'}
-                 </div>
+                 
+                  {/* Row Sum Indicator */}
+                  <div className={cn(
+                   "flex items-center justify-center rounded-md font-mono font-bold transition-all duration-700 border",
+                   cellClasses, // Use same size classes as cells
+                   "text-[10px]", 
+                   isRowComplete 
+                     ? "bg-sky-700 text-white border-sky-600 shadow-sm" 
+                     : "bg-slate-700/40 text-slate-400 border-slate-600/30",
+                   isComplete ? "opacity-100 scale-100" : "opacity-0 scale-95"
+                  )}>
+                    {rowSum > 0 ? rowSum : '-'}
+                  </div>
               </div>
             );
           })}
+
+          {/* Column Sums Row */}
+          <div className={cn("flex items-center", getGapSize())}>
+            {colSums.map((cs, i) => (
+              <div 
+                key={`colsum-${i}`} 
+                className={cn(
+                  "flex items-center justify-center rounded-md font-mono font-bold transition-all duration-700 border",
+                  getCellSize(),
+                  "text-[10px]",
+                  cs.isComplete 
+                    ? "bg-sky-700 text-white border-sky-600 shadow-sm" 
+                    : "bg-slate-700/40 text-slate-400 border-slate-600/30",
+                  isComplete ? "opacity-100 scale-100" : "opacity-0 scale-95"
+                )}
+              >
+                {cs.sum > 0 ? cs.sum : '-'}
+              </div>
+            ))}
+            {/* Empty corner spacer */}
+            <div className={getCellSize()} />
+          </div>
         </div>
       </div>
 
-      {/* Footer Area */}
-      {mode === 'brute' ? (
-        <div className="grid grid-cols-3 gap-2 py-2 border-t border-slate-700/50 mt-2">
+      {/* Footer Area: Stats for all Simulations */}
+      {mainMode === 'simulation' ? (
+        <div className="flex flex-col mt-2">
+            {/* Description for Simulation Steps */}
+            <div className="h-6 flex items-center justify-center mb-1">
+                <span className="text-[10px] font-bold text-emerald-400/80 uppercase tracking-wide animate-pulse">
+                    {currentStep?.desc || (isComplete ? 'Simulation Finished' : 'Solving...')}
+                </span>
+            </div>
+            <div className="grid grid-cols-3 gap-2 py-2 border-t border-slate-700/50">
             <div className="flex flex-col items-center">
               <Activity size={14} className="text-rose-400 mb-1" />
               <span className="text-[10px] text-slate-400 uppercase">Attempts</span>
@@ -210,13 +244,14 @@ export const MagicSquareCard = ({
               <span className="text-[10px] text-slate-400 uppercase">Time</span>
               <span className="text-sm font-mono text-slate-200">{stats ? (stats.time / 1000).toFixed(2) : "0.00"}s</span>
             </div>
+            </div>
         </div>
       ) : (
         /* Learn & Practice Controls */
         <>
             <div className="mt-4 flex flex-col items-center gap-3">
                 <div className="h-6 flex items-center">
-                    {mode === 'learn' ? (
+                    {mainMode === 'simulation' && algoMode === 'formula' ? (
                         <span className="text-[9px] font-bold text-emerald-400/80 uppercase tracking-wide">{currentStep.desc}</span>
                     ) : (
                         <span className="text-[9px] font-bold text-blue-400 uppercase">Target: {targetNum}</span>

@@ -21,10 +21,38 @@ export const ControlPanel = ({
   };
 
   const tabs = [
-    { id: 'sorting', label: 'Sorting', icon: Sliders },
-    { id: 'magic', label: 'Magic', icon: Grid3x3 },
-    { id: 'sudoku', label: 'Sudoku', icon: Hash },
+    { id: 'sorting', label: 'Sorting', icon: Sliders, color: 'indigo' },
+    { id: 'magic', label: 'Magic', icon: Grid3x3, color: 'emerald' },
+    { id: 'sudoku', label: 'Sudoku', icon: Hash, color: 'amber' },
   ];
+
+  const activeColor = tabs.find(t => t.id === activeTab)?.color || 'indigo';
+
+  const colorConfig = {
+    indigo: {
+      bg: 'bg-indigo-600',
+      shadow: 'shadow-indigo-500/20',
+      text: 'text-indigo-400',
+      accent: 'accent-indigo-500',
+      shadowLg: 'shadow-indigo-500/30'
+    },
+    emerald: {
+      bg: 'bg-emerald-600',
+      shadow: 'shadow-emerald-500/20',
+      text: 'text-emerald-400',
+      accent: 'accent-emerald-500',
+      shadowLg: 'shadow-emerald-500/30'
+    },
+    amber: {
+      bg: 'bg-amber-600',
+      shadow: 'shadow-amber-500/20',
+      text: 'text-amber-400',
+      accent: 'accent-amber-500',
+      shadowLg: 'shadow-amber-500/30'
+    }
+  };
+
+  const theme = colorConfig[activeColor];
 
   return (
     <div className="sticky top-0 z-50 bg-slate-900/80 backdrop-blur-xl border-b border-white/5 px-6 py-4 shadow-2xl">
@@ -34,7 +62,7 @@ export const ControlPanel = ({
         <div className="flex items-center gap-6 w-full md:w-auto">
           {/* Logo */}
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-indigo-600 rounded-lg shadow-lg shadow-indigo-500/20">
+            <div className={cn("p-2 rounded-lg shadow-lg transition-colors duration-500", theme.bg, theme.shadow)}>
               <LayoutGrid className="text-white" size={24} />
             </div>
             <div className="hidden sm:block">
@@ -56,7 +84,7 @@ export const ControlPanel = ({
                   className={cn(
                     "flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap",
                     isActive 
-                      ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/20" 
+                      ? `${theme.bg} text-white shadow-lg ${theme.shadow}` 
                       : "text-slate-400 hover:text-white hover:bg-white/5"
                   )}
                 >
@@ -77,7 +105,7 @@ export const ControlPanel = ({
             onClick={toggleSound}
             className={cn(
               "p-2 rounded-lg transition-all",
-              soundEnabled ? "bg-indigo-500 text-white shadow-lg shadow-indigo-500/30" : "bg-slate-700 text-slate-400 hover:text-white"
+              soundEnabled ? `${theme.bg} text-white shadow-lg ${theme.shadowLg}` : "bg-slate-700 text-slate-400 hover:text-white"
             )}
             title={soundEnabled ? "Mute" : "Sound"}
           >
@@ -90,7 +118,7 @@ export const ControlPanel = ({
               <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
                  Count
               </label>
-              <span className="text-[10px] font-mono text-indigo-400 font-bold">{arraySize}</span>
+              <span className={cn("text-[10px] font-mono font-bold", theme.text)}>{arraySize}</span>
             </div>
             <input 
               type="range" 
@@ -98,7 +126,7 @@ export const ControlPanel = ({
               max="100" 
               value={arraySize} 
               onChange={(e) => setArraySize(Number(e.target.value))}
-              className="accent-indigo-500 h-1 w-full bg-slate-700 rounded-lg appearance-none cursor-pointer"
+              className={cn("h-1 w-full bg-slate-700 rounded-lg appearance-none cursor-pointer", theme.accent)}
             />
           </div>
 
@@ -108,7 +136,7 @@ export const ControlPanel = ({
               <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
                  Speed
               </label>
-              <span className="text-[10px] font-mono text-indigo-400 font-bold">{speed}</span>
+              <span className={cn("text-[10px] font-mono font-bold", theme.text)}>{speed}</span>
             </div>
             <input 
               type="range" 
@@ -116,7 +144,7 @@ export const ControlPanel = ({
               max="1000" 
               value={speed} 
               onChange={(e) => setSpeed(Number(e.target.value))}
-              className="accent-indigo-500 h-1 w-full bg-slate-700 rounded-lg appearance-none cursor-pointer"
+              className={cn("h-1 w-full bg-slate-700 rounded-lg appearance-none cursor-pointer", theme.accent)}
             />
           </div>
 
