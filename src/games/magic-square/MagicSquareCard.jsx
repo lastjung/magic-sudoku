@@ -85,12 +85,12 @@ export const MagicSquareCard = ({
 
   const getAlgoFullLabel = (id) => {
     const labels = {
-      formula: 'Direct Formula',
+      dynamic: 'Heuristic CSP',
+      heuristic: 'Smart Backtrack',
+      metric: 'Metric Backtrack',
       backtrack: 'Recursive Backtrack',
-      smart: 'Pruned Backtrack',
-      heuristic: 'Heuristic Search',
-      dynamic: 'CSP Solver (Heuristic)',
-      brute: 'Pure Brute Force'
+      brute: 'Pure Brute Force',
+      formula: 'Direct Formula'
     };
     return labels[id] || id;
   };
@@ -98,13 +98,13 @@ export const MagicSquareCard = ({
   return (
     <div className={cn(
       "bg-slate-800/40 backdrop-blur-md border rounded-xl p-4 flex flex-col shadow-xl transition-all group overflow-hidden h-full",
-      isComplete ? "border-emerald-500/50 bg-emerald-500/5" : "border-slate-700"
+      isComplete ? "border-emerald-500/30 bg-emerald-500/5 shadow-[0_0_20px_rgba(16,185,129,0.05)]" : "border-slate-700/50"
     )}>
       {/* Header */}
       <div className="flex justify-between items-center mb-4 min-h-[32px]">
         <div className="flex items-center gap-2">
-            {algoMode === 'dynamic' ? <BrainCircuit size={14} className="text-indigo-400" /> : <Zap size={14} className="text-indigo-400" />}
-            <h3 className={cn("text-xs font-bold uppercase tracking-widest", mainMode === 'simulation' ? "text-indigo-300" : "text-emerald-300")}>
+            {algoMode === 'dynamic' ? <BrainCircuit size={14} className="text-emerald-400/60" /> : <Zap size={14} className="text-emerald-400/60" />}
+            <h3 className={cn("text-xs font-bold uppercase tracking-widest", mainMode === 'simulation' ? "text-emerald-400/50" : "text-emerald-400/50")}>
                 {mainMode === 'simulation' ? getAlgoFullLabel(algoMode) : `${size}x${size} Practice`}
             </h3>
         </div>
@@ -112,7 +112,7 @@ export const MagicSquareCard = ({
         <div className="flex items-center gap-1.5">
            {mainMode === 'simulation' && (
              <>
-               <span className="text-[9px] bg-slate-700/50 text-indigo-300/80 px-1.5 py-1 rounded font-mono border border-white/5 mr-2">
+               <span className="text-[9px] bg-slate-700/30 text-emerald-400/40 px-1.5 py-1 rounded font-mono border border-white/5 mr-2">
                  {algoMode === 'formula' ? 'O(n^2)' : algoMode === 'backtrack' ? 'O(n!)' : 'O(Exp)'}
                </span>
 
@@ -123,8 +123,8 @@ export const MagicSquareCard = ({
                       className={cn(
                         "p-1.5 rounded-lg transition-all active:scale-95 border",
                         isComplete 
-                          ? "bg-slate-700 text-slate-300 border-slate-600" 
-                          : "bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 border-emerald-500/20"
+                          ? "bg-slate-700/50 text-slate-400 border-slate-600/30" 
+                          : "bg-emerald-400/10 text-emerald-400/60 hover:bg-emerald-400/20 border-emerald-500/10"
                       )}
                     >
                       {isComplete ? <RefreshCw size={14} /> : <Play size={14} fill="currentColor" />}
@@ -263,12 +263,12 @@ export const MagicSquareCard = ({
       {mainMode === 'simulation' ? (
         <div className="flex flex-col mt-2">
             {/* Intelligent Description for Learning */}
-            <div className="h-8 flex items-center justify-center mb-1 px-4 bg-slate-900/40 rounded-lg border border-white/5">
+            <div className="h-10 flex items-center justify-center mb-1 px-4 bg-slate-900/60 rounded-lg border border-amber-500/20 shadow-inner">
                 <span className={cn(
-                    "text-[10px] font-bold uppercase tracking-wide text-center",
-                    algoMode === 'dynamic' ? "text-indigo-300" : "text-emerald-400/80"
+                    "text-[12px] font-black uppercase tracking-wider text-center",
+                    "text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.2)]"
                 )}>
-                    {algoMode === 'dynamic' ? (dynamicDesc || "준비 중...") : (currentStep?.desc || (isComplete ? 'Simulation Finished' : 'Solving...'))}
+                    {algoMode !== 'formula' ? (dynamicDesc || "Ready...") : (currentStep?.desc || (isComplete ? 'Simulation Finished' : 'Solving...'))}
                 </span>
             </div>
             <div className="grid grid-cols-3 gap-2 py-2 border-t border-slate-700/50">

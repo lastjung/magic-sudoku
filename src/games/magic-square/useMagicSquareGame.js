@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { audioEngine } from '../../utils/audio';
 
-export const useMagicSquareGame = ({ size, mainMode, algoMode, steps, speed, triggerRun = 0, triggerReset = 0 }) => {
+export const useMagicSquareGame = ({ size, mainMode, algoMode, steps, speed, triggerRun = 0, triggerReset = 0, onComplete }) => {
   const mode = mainMode === 'simulation' ? (algoMode === 'formula' ? 'learn' : (algoMode === 'dynamic' ? 'dynamic' : 'brute')) : 'practice';
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -68,7 +68,16 @@ export const useMagicSquareGame = ({ size, mainMode, algoMode, steps, speed, tri
 
     if (!solverRef.current || stats.attempts === 0) {
         startTimeRef.current = performance.now();
-        if (mode === 'brute' || algoMode === 'backtrack' || algoMode === 'smart' || algoMode === 'heuristic') {
+        if (algoMode === 'heuristic') {
+            solverRef.current = {
+                flatBoard: Array(size * size).fill(null),
+                used: Array(size * size + 1).fill(false),
+                stack: [],
+                filledCount: 0,
+                firstNumberPositions: [],
+                firstPosIdx: -1
+            };
+        } else if (mode === 'brute' || algoMode === 'backtrack' || algoMode === 'metric') {
             solverRef.current = {
                 board: Array(size * size).fill(null), 
                 currentNum: 1, stack: [], backtracking: false
@@ -95,14 +104,15 @@ export const useMagicSquareGame = ({ size, mainMode, algoMode, steps, speed, tri
 
         setCurrentStepIndex(prev => {
           if (prev < steps.length - 1) {
-            const next = prev + 1;
-            const nextStep = steps[next];
+            const nextVal = prev + 1;
+            const nextStep = steps[nextVal];
             if (nextStep?.val && isSoundEnabled) audioEngine.playNote(nextStep.val);
             if (nextStep?.board) setPracticeBoard(nextStep.board);
-            setStats(s => ({ ...s, attempts: next }));
-            return next;
+            setStats(s => ({ ...s, attempts: nextVal }));
+            return nextVal;
           }
           setIsPlaying(false);
+          if (onComplete) onComplete({ time: elapsed, attempts: steps.length });
           return prev;
         });
       }, playbackDelay);
@@ -115,86 +125,265 @@ export const useMagicSquareGame = ({ size, mainMode, algoMode, steps, speed, tri
 
         const solver = solverRef.current;
         if (!solver) return;
-        const { board, stack } = solver;
 
-        if (solver.currentNum > size * size) {
-            setIsPlaying(false);
-            setTargetNum(size * size + 999);
-            if (isSoundEnabled) audioEngine.playSuccess();
-            setDynamicHighlight(null);
-            setDynamicDesc("🎉 Magic Square Found!");
-            return;
-        }
+        // --- 3. Smart Backtrack (heuristic) Mode ---
+        if (algoMode === 'heuristic') {
+            const { flatBoard, used, stack } = solver;
 
-        let stackFrame = stack[solver.currentNum];
-        if (!stackFrame) {
-            let candidates = [];
-            if (solver.currentNum === 1) {
-                if (size === 3) candidates = [0, 1, 4];
-                else if (size === 4) candidates = [0, 1, 5];
-                else if (size === 5) candidates = [0, 1, 2, 6, 7, 12];
-                else { for (let i = 0; i < size * size; i++) candidates.push(i); }
+            if (solver.filledCount === size * size) {
+                setIsPlaying(false);
+                setTargetNum(size * size + 999);
+                if (isSoundEnabled) audioEngine.playSuccess();
+                setDynamicHighlight(null);
+                setDynamicDesc(`🎉 정답 발견! 모든 방향의 합이 ${magicConst}입니다.`);
+                if (onComplete) onComplete({ time: elapsed, attempts: solver.filledCount });
+                return;
+            }
+
+            // Optimize Start: Fix number 1 at positions 1, 2, or 5 (Indices 0, 1, 4 for 3x3)
+            if (solver.filledCount === 0) {
+                if (solver.firstPosIdx === -1) {
+                    let validStarts = [];
+                    if (size === 3) validStarts = [0, 1, 4];
+                    else if (size === 4) validStarts = [0, 1, 5];
+                    else { for (let i = 0; i < size * size; i++) validStarts.push(i); }
+                    solver.firstNumberPositions = validStarts;
+                    solver.firstPosIdx = 0;
+                } else {
+                    flatBoard[solver.firstNumberPositions[solver.firstPosIdx]] = null;
+                    used[1] = false;
+                    solver.firstPosIdx++;
+                }
+
+                if (solver.firstPosIdx >= solver.firstNumberPositions.length) {
+                    setIsPlaying(false);
+                    setDynamicDesc("해답을 찾지 못했습니다.");
+                    return;
+                }
+
+                const pos1 = solver.firstNumberPositions[solver.firstPosIdx];
+                flatBoard[pos1] = 1;
+                used[1] = true;
+                solver.filledCount = 1;
+                setDynamicHighlight({ r: Math.floor(pos1/size), c: pos1%size, type: 'active' });
+                setDynamicDesc(`시작 위치 최적화: ${pos1}번 칸에 1을 배치`);
+                
+                const newB = [];
+                for (let rr = 0; rr < size; rr++) newB.push(flatBoard.slice(rr * size, (rr + 1) * size));
+                setPracticeBoard(newB);
+                return;
+            }
+
+            let currentFrame = stack[solver.filledCount];
+            if (!currentFrame) {
+                // Fixed order (0, 1, 2...) for Smart Backtrack, but with Forced Logic
+                const cellIdx = flatBoard.findIndex(v => v === null);
+                let forcedVal = null;
+                const r_idx = Math.floor(cellIdx/size), c_idx = cellIdx % size;
+                
+                // Lines to check for forced values
+                const lines = [
+                    Array.from({length: size}, (_, i) => r_idx * size + i), // Row
+                    Array.from({length: size}, (_, i) => i * size + c_idx)  // Col
+                ];
+                if (r_idx === c_idx) lines.push(Array.from({length: size}, (_, i) => i * size + i));
+                if (r_idx + c_idx === size - 1) lines.push(Array.from({length: size}, (_, i) => i * size + (size - 1 - i)));
+
+                for (let line of lines) {
+                    const filled = line.filter(i => flatBoard[i] !== null);
+                    if (filled.length === size - 1) {
+                        forcedVal = magicConst - filled.reduce((a, b) => a + flatBoard[b], 0);
+                        break;
+                    }
+                }
+                currentFrame = { cellIdx, triedNum: 0, forcedVal };
+                stack[solver.filledCount] = currentFrame;
+            }
+
+            const r = Math.floor(currentFrame.cellIdx/size), c = currentFrame.cellIdx % size;
+            let numToTry = null;
+
+            if (currentFrame.forcedVal !== null) {
+                if (currentFrame.triedNum === 0) {
+                    numToTry = currentFrame.forcedVal;
+                    currentFrame.triedNum = 999; // Only try once
+                    setDynamicDesc(`나머지 3칸 합을 보니, 여기는 무조건 ${numToTry}이어야 합니다.`);
+                }
             } else {
-                for (let i = 0; i < size * size; i++) if (board[i] === null) candidates.push(i);
-            }
-            for (let i = candidates.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
-            }
-            stackFrame = { candidates, triedIndex: -1 };
-            stack[solver.currentNum] = stackFrame;
-        }
-
-        stackFrame.triedIndex++;
-        if (stackFrame.triedIndex >= stackFrame.candidates.length) {
-            stack[solver.currentNum] = null;
-            const posToClear = board.indexOf(solver.currentNum);
-            if (posToClear !== -1) {
-                setDynamicHighlight({ r: Math.floor(posToClear/size), c: posToClear%size, type: 'backtrack' });
-                setDynamicDesc(`Backtrack: Moving ${solver.currentNum}...`);
-                board[posToClear] = null;
-            }
-            solver.currentNum--;
-            if (solver.currentNum < 1) { setIsPlaying(false); return; }
-            setStats(prev => ({ ...prev, attempts: prev.attempts + 1 }));
-        } else {
-            const existingPos = board.indexOf(solver.currentNum);
-            if (existingPos !== -1) board[existingPos] = null;
-
-            const pos = stackFrame.candidates[stackFrame.triedIndex];
-            board[pos] = solver.currentNum;
-            const r = Math.floor(pos / size);
-            const c = pos % size;
-            setDynamicHighlight({ r, c, type: 'active' });
-            setDynamicDesc(`Placing ${solver.currentNum} at (${r},${c})`);
-
-            let isValid = true;
-            let checks = [];
-            const row = []; for(let i=0; i<size; i++) row.push(r*size+i); checks.push(row);
-            const col = []; for(let i=0; i<size; i++) col.push(i*size+c); checks.push(col);
-            if (r===c) { const d1=[]; for(let i=0; i<size; i++) d1.push(i*size+i); checks.push(d1); }
-            if (r+c===size-1) { const d2=[]; for(let i=0; i<size; i++) d2.push(i*size+size-1-i); checks.push(d2); }
-            
-            for (let line of checks) {
-                const vals = line.map(i => board[i]).filter(v => v !== null);
-                const s = vals.reduce((a,b) => a+b, 0);
-                if (s > magicConst || (vals.length === size && s !== magicConst)) { isValid = false; break; }
+                numToTry = (currentFrame.triedNum === 0 ? 2 : currentFrame.triedNum + 1);
+                while (numToTry <= size * size && used[numToTry]) numToTry++;
+                currentFrame.triedNum = numToTry;
+                setDynamicDesc(`${currentFrame.cellIdx}번 칸에 ${numToTry}을 넣어봅니다.`);
             }
 
-            if (isValid) {
-                if (isSoundEnabled) audioEngine.playNote(solver.currentNum);
-                solver.currentNum++;
+            if (numToTry !== null && numToTry >= 2 && numToTry <= size * size && !used[numToTry]) {
+                flatBoard[currentFrame.cellIdx] = numToTry;
+                used[numToTry] = true;
+                setDynamicHighlight({ r, c, type: currentFrame.forcedVal ? 'forced' : 'active' });
+
+                let isValid = true;
+                const lines_v = [
+                    Array.from({length: size}, (_, i) => r * size + i),
+                    Array.from({length: size}, (_, i) => i * size + c)
+                ];
+                if (r === c) lines_v.push(Array.from({length: size}, (_, i) => i * size + i));
+                if (r + c === size - 1) lines_v.push(Array.from({length: size}, (_, i) => i * size + (size - 1 - i)));
+
+                for (let line of lines_v) {
+                    const vals = line.map(i => flatBoard[i]).filter(v => v !== null);
+                    const s = vals.reduce((a, b) => a + b, 0);
+                    if (s > magicConst || (vals.length === size && s !== magicConst)) { isValid = false; break; }
+                }
+
+                if (isValid) {
+                    if (isSoundEnabled) audioEngine.playNote(numToTry);
+                    solver.filledCount++;
+                    setStats(prev => ({ ...prev, attempts: prev.attempts + 1 }));
+                } else {
+                    setDynamicHighlight({ r, c, type: 'backtrack' });
+                    setDynamicDesc(`❌ ${numToTry}을 넣으면 규칙에 어긋납니다. 퇴각!`);
+                    flatBoard[currentFrame.cellIdx] = null;
+                    used[numToTry] = false;
+                    setStats(prev => ({ ...prev, attempts: prev.attempts + 1 }));
+                }
             } else {
-                setDynamicHighlight({ r, c, type: 'backtrack' });
-                setDynamicDesc(`Conflict: Sum mismatch at (${r},${c})`);
-                board[pos] = null;
+                // Backtrack
+                stack[solver.filledCount] = null;
+                solver.filledCount--;
+                if (solver.filledCount > 0) {
+                    const prevFrame = stack[solver.filledCount];
+                    const prevVal = flatBoard[prevFrame.cellIdx];
+                    used[prevVal] = false;
+                    setDynamicHighlight({ r: Math.floor(prevFrame.cellIdx/size), c: prevFrame.cellIdx%size, type: 'backtrack' });
+                    setDynamicDesc(`🔙 ${prevVal}은 아닌 것 같습니다. 되돌아갑니다.`);
+                    flatBoard[prevFrame.cellIdx] = null;
+                }
+            }
+
+            const newBoard2D = [];
+            for (let qr = 0; qr < size; qr++) newBoard2D.push(flatBoard.slice(qr * size, (qr + 1) * size));
+            setPracticeBoard(newBoard2D);
+        } 
+        // --- End Smart Backtrack ---
+        else {
+            const { board, stack } = solver;
+
+            if (solver.currentNum > size * size) {
+                setIsPlaying(false);
+                setTargetNum(size * size + 999);
+                if (isSoundEnabled) audioEngine.playSuccess();
+                setDynamicHighlight(null);
+                setDynamicDesc(`🎉 정답 발견! 모든 방향의 합이 ${magicConst}입니다.`);
+                if (onComplete) onComplete({ time: elapsed, attempts: size * size });
+                return;
+            }
+
+            let stackFrame = stack[solver.currentNum];
+            if (!stackFrame) {
+                let candidates = [];
+                if (solver.currentNum === 1) {
+                    if (size === 3) candidates = [0, 1, 4];
+                    else if (size === 4) candidates = [0, 1, 5];
+                    else { for (let i = 0; i < size * size; i++) candidates.push(i); }
+                } else {
+                    for (let i = 0; i < size * size; i++) if (board[i] === null) candidates.push(i);
+                }
+
+                if (algoMode === 'metric') {
+                    // Score by distance to center
+                    const center = (size - 1) / 2;
+                    candidates.sort((a, b) => {
+                        const r1 = Math.floor(a/size), c1 = a%size;
+                        const r2 = Math.floor(b/size), c2 = b%size;
+                        const d1 = Math.pow(r1-center, 2) + Math.pow(c1-center, 2);
+                        const d2 = Math.pow(r2-center, 2) + Math.pow(c2-center, 2);
+                        return d1 - d2; // Center-first
+                    });
+                } else if (algoMode === 'backtrack') {
+                    for (let i = candidates.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
+                    }
+                }
+                // Brute stays in order (0, 1, 2...)
+                
+                stackFrame = { candidates, triedIndex: -1 };
+                stack[solver.currentNum] = stackFrame;
+            }
+
+            stackFrame.triedIndex++;
+            if (stackFrame.triedIndex >= stackFrame.candidates.length) {
+                stack[solver.currentNum] = null;
+                const posToClear = board.lastIndexOf(solver.currentNum);
+                if (posToClear !== -1) {
+                    setDynamicHighlight({ r: Math.floor(posToClear/size), c: posToClear%size, type: 'backtrack' });
+                    setDynamicDesc(`백트래킹: ${solver.currentNum}번 숫자를 이동 시도...`);
+                    board[posToClear] = null;
+                }
+                solver.currentNum--;
+                if (solver.currentNum < 1) { setIsPlaying(false); return; }
                 setStats(prev => ({ ...prev, attempts: prev.attempts + 1 }));
+            } else {
+                const existingPos = board.indexOf(solver.currentNum);
+                if (existingPos !== -1) board[existingPos] = null;
+
+                const pos = stackFrame.candidates[stackFrame.triedIndex];
+                board[pos] = solver.currentNum;
+                const r = Math.floor(pos / size);
+                const c = pos % size;
+                setDynamicHighlight({ r, c, type: 'active' });
+                setDynamicDesc(`(${r}, ${c}) 위치에 ${solver.currentNum}을 배치해봅니다.`);
+
+                let isValid = true;
+                if (algoMode !== 'brute') {
+                    let checks = [
+                        Array.from({length: size}, (_, i) => r * size + i),
+                        Array.from({length: size}, (_, i) => i * size + c)
+                    ];
+                    if (r === c) checks.push(Array.from({length: size}, (_, i) => i * size + i));
+                    if (r + c === size - 1) checks.push(Array.from({length: size}, (_, i) => i * size + (size - 1 - i)));
+                    
+                    for (let line of checks) {
+                        const vals = line.map(i => board[i]).filter(v => v !== null);
+                        const s = vals.reduce((a, b) => a + b, 0);
+                        if (s > magicConst || (vals.length === size && s !== magicConst)) { isValid = false; break; }
+                    }
+                } else {
+                    // Pure Brute only checks at the very end (simulated here by checking only when all numbers are in)
+                    if (solver.currentNum === size * size) {
+                        // Check all lines
+                        const allIndices = [];
+                        for(let i=0; i<size; i++) {
+                            const row = []; for(let j=0; j<size; j++) row.push(i*size+j); allIndices.push(row);
+                            const col = []; for(let j=0; j<size; j++) col.push(j*size+i); allIndices.push(col);
+                        }
+                        const d1=[]; for(let i=0; i<size; i++) d1.push(i*size+i); allIndices.push(d1);
+                        const d2=[]; for(let i=0; i<size; i++) d2.push(i*size+size-1-i); allIndices.push(d2);
+
+                        for(let line of allIndices) {
+                            const s = line.reduce((acc, idx) => acc + board[idx], 0);
+                            if (s !== magicConst) { isValid = false; break; }
+                        }
+                    }
+                }
+
+                if (isValid) {
+                    if (isSoundEnabled) audioEngine.playNote(solver.currentNum);
+                    solver.currentNum++;
+                    if (algoMode === 'brute' && solver.currentNum <= size * size) {
+                         setDynamicDesc(`${solver.currentNum}번 배치 완료 (검증 건너뜀)`);
+                    }
+                } else {
+                    setDynamicHighlight({ r, c, type: 'backtrack' });
+                    setDynamicDesc(algoMode === 'brute' ? `최종 합계 불일치: 처음부터 다시 탐색` : `합계 충돌: (${r}, ${c}) 위치에서 ${solver.currentNum}은 탈락!`);
+                    board[pos] = null;
+                    setStats(prev => ({ ...prev, attempts: prev.attempts + 1 }));
+                }
             }
+            const newBoard2D = [];
+            for (let r_row = 0; r_row < size; r_row++) newBoard2D.push(board.slice(r_row * size, (r_row + 1) * size));
+            setPracticeBoard(newBoard2D);
         }
-        const newBoard2D = [];
-        for (let r_row = 0; r_row < size; r_row++) newBoard2D.push(board.slice(r_row * size, (r_row + 1) * size));
-        setPracticeBoard(newBoard2D);
-        // Unified Speed: Using playbackDelay directly without dividers
       }, playbackDelay);
     } else if (mode === 'dynamic') {
         const magicConst = getMagicConstant(size);
@@ -209,10 +398,11 @@ export const useMagicSquareGame = ({ size, mainMode, algoMode, steps, speed, tri
 
             if (solver.filledCount === size * size) {
                 setIsPlaying(false);
-                setDynamicDesc("🎉 CSP Solution Found!");
+                setDynamicDesc(`🎉 정답 발견! 모든 방향의 합이 ${magicConst}입니다.`);
                 setDynamicHighlight(null);
                 setTargetNum(size * size + 999);
                 if (isSoundEnabled) audioEngine.playSuccess();
+                if (onComplete) onComplete({ time: elapsed, attempts: solver.filledCount });
                 return;
             }
 
@@ -246,7 +436,7 @@ export const useMagicSquareGame = ({ size, mainMode, algoMode, steps, speed, tri
                 used[1] = true;
                 solver.filledCount = 1;
                 setDynamicHighlight({ r: Math.floor(pos1/size), c: pos1%size, type: 'active' });
-                setDynamicDesc("Starting with 1 at optimized position...");
+                setDynamicDesc(`최적화 시작: ${pos1}번 칸에 1을 배치합니다.`);
                 
                 const newB = [];
                 for (let rr = 0; rr < size; rr++) newB.push(flatBoard.slice(rr * size, (rr + 1) * size));
@@ -298,13 +488,13 @@ export const useMagicSquareGame = ({ size, mainMode, algoMode, steps, speed, tri
                 if (currentFrame.triedNum === 0) {
                     numToTry = currentFrame.forcedVal;
                     currentFrame.triedNum = 999;
-                    setDynamicDesc(`Logical inference: ${numToTry} must be here.`);
+                    setDynamicDesc(`논리적 추론: 여기에 올 숫자는 ${numToTry}뿐입니다.`);
                 }
             } else {
                 numToTry = (currentFrame.triedNum === 0 ? 2 : currentFrame.triedNum + 1);
                 while (numToTry <= size * size && used[numToTry]) numToTry++;
                 currentFrame.triedNum = numToTry;
-                setDynamicDesc(`Trying ${numToTry} at (${r},${c})`);
+                setDynamicDesc(`현재 최적의 칸(${r}, ${c})에 ${numToTry} 시도 중...`);
             }
 
             if (numToTry !== null && numToTry >= 2 && numToTry <= size * size && !used[numToTry]) {
@@ -330,7 +520,7 @@ export const useMagicSquareGame = ({ size, mainMode, algoMode, steps, speed, tri
                     setStats(prev => ({ ...prev, attempts: prev.attempts + 1 }));
                 } else {
                     setDynamicHighlight({ r, c, type: 'backtrack' });
-                    setDynamicDesc(`Failed: Conflict at (${r},${c})`);
+                    setDynamicDesc(`제약 조건 위반: (${r}, ${c})에서 충돌 발생!`);
                     flatBoard[currentFrame.cellIdx] = null;
                     used[numToTry] = false;
                     setStats(prev => ({ ...prev, attempts: prev.attempts + 1 }));
@@ -344,7 +534,7 @@ export const useMagicSquareGame = ({ size, mainMode, algoMode, steps, speed, tri
                     const prevVal = flatBoard[prevFrame.cellIdx];
                     used[prevVal] = false;
                     setDynamicHighlight({ r: Math.floor(prevFrame.cellIdx/size), c: prevFrame.cellIdx%size, type: 'backtrack' });
-                    setDynamicDesc(`Backtrack: Removing ${prevVal}...`);
+                    setDynamicDesc(`백트래킹: ${prevVal}을 제거하고 대안을 찾습니다.`);
                     flatBoard[prevFrame.cellIdx] = null;
                 }
             }
