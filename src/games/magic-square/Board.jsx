@@ -186,7 +186,7 @@ const MagicControlCard = ({
 
 export default function MagicSquareBoard({ speed }) {
   const [selectedSize, setSelectedSize] = useState(3);
-  const [selectedAlgos, setSelectedAlgos] = useState(new Set(['formula', 'metric']));
+  const [selectedAlgos, setSelectedAlgos] = useState(new Set(['formula']));
   const [mainMode, setMainMode] = useState('simulation');
   const [triggerRun, setTriggerRun] = useState(0);
   const [triggerReset, setTriggerReset] = useState(0);
@@ -284,24 +284,26 @@ export default function MagicSquareBoard({ speed }) {
   renderItems.splice(insertIdx, 0, { type: 'control' });
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-8">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
+    <div className="max-w-full mx-auto px-2 py-2">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-start">
         {renderItems.map((item, index) => (
             item.type === 'control' ? (
-                <MagicControlCard 
-                    key="control-card"
-                    selectedSize={selectedSize}
-                    setSelectedSize={setSelectedSize}
-                    selectedAlgos={selectedAlgos}
-                    toggleAlgo={toggleAlgo}
-                    toggleAllAlgos={toggleAllAlgos}
-                    mainMode={mainMode}
-                    setMainMode={setMainMode}
-                    onRunAll={handleRunAll}
-                    onResetAll={handleResetAll}
-                    showAlgoTable={showAlgoTable}
-                    setShowAlgoTable={setShowAlgoTable}
-                />
+                <div className="hidden md:block">
+                  <MagicControlCard 
+                      key="control-card"
+                      selectedSize={selectedSize}
+                      setSelectedSize={setSelectedSize}
+                      selectedAlgos={selectedAlgos}
+                      toggleAlgo={toggleAlgo}
+                      toggleAllAlgos={toggleAllAlgos}
+                      mainMode={mainMode}
+                      setMainMode={setMainMode}
+                      onRunAll={handleRunAll}
+                      onResetAll={handleResetAll}
+                      showAlgoTable={showAlgoTable}
+                      setShowAlgoTable={setShowAlgoTable}
+                  />
+                </div>
             ) : (
                 <MagicSquareCard 
                     key={`${selectedSize}-${item.algoId}-${index}`}
@@ -317,10 +319,10 @@ export default function MagicSquareBoard({ speed }) {
         ))}
       </div>
 
-      {/* Comparison Scoreboard */}
+      {/* Comparison Scoreboard - Hidden on Mobile */}
       {mainMode === 'simulation' && activeAlgos.length > 0 && (
-          <div className="mt-12 overflow-hidden bg-slate-800/40 backdrop-blur-xl border border-white/5 rounded-3xl shadow-2xl">
-              <div className="bg-slate-900/50 px-8 py-4 border-b border-white/5 flex items-center justify-between">
+          <div className="hidden md:block mt-8 overflow-hidden bg-slate-800/40 backdrop-blur-xl border border-white/5 rounded-3xl shadow-2xl">
+              <div className="bg-slate-900/50 px-4 py-3 border-b border-white/5 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                       <div className="p-2 bg-emerald-500/20 rounded-lg text-emerald-400">
                           <Sliders size={20} />
@@ -332,8 +334,8 @@ export default function MagicSquareBoard({ speed }) {
                       LIVE RANKING
                   </div>
               </div>
-              <div className="p-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="p-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                       {activeAlgos.map((algoId) => (
                             <ScoreCard 
                              key={`score-${algoId}`} 

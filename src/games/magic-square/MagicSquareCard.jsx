@@ -2,7 +2,7 @@ import React, { useEffect, useMemo } from 'react';
 import { 
   Play, Pause, RefreshCw, ChevronLeft, ChevronRight, SkipBack, SkipForward,
   CheckCircle2, Target, Zap,
-  Activity, Clock, Hash, BrainCircuit
+  Activity, Clock, Hash, BrainCircuit, LayoutGrid
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { audioEngine } from '../../utils/audio';
@@ -97,7 +97,7 @@ export const MagicSquareCard = ({
 
   return (
     <div className={cn(
-      "bg-slate-800/40 backdrop-blur-md border rounded-xl p-4 flex flex-col shadow-xl transition-all group overflow-hidden h-full",
+      "bg-slate-800/40 backdrop-blur-md border rounded-xl p-3 flex flex-col shadow-xl transition-all group overflow-hidden h-full",
       isComplete ? "border-emerald-500/30 bg-emerald-500/5 shadow-[0_0_20px_rgba(16,185,129,0.05)]" : "border-slate-700/50"
     )}>
       {/* Header */}
@@ -176,24 +176,49 @@ export const MagicSquareCard = ({
                         }
                      }
 
-                     return (
+                      const getFormulaColor = (val, r, c, isDone) => {
+                          if (!val) return null;
+                          const spatialRatio = (r + c) / ((size - 1) * 2);
+                          // Shift gradient towards orange using power function
+                          // 140 (Emerald) to 20 (Deep Orange)
+                          const hue = 140 - (Math.pow(spatialRatio, 0.6) * 120);
+                          const saturation = isDone ? '85%' : '95%';
+                          const lightness = isDone ? '45%' : '50%';
+                          return `hsla(${hue}, ${saturation}, ${lightness}, ${isDone ? 0.75 : 0.9})`;
+                      };
+
+                      const isFormula = algoMode === 'formula';
+                      const formulaStyle = v && isFormula ? {
+                          backgroundColor: getFormulaColor(v, r, c, isComplete),
+                          borderColor: `hsla(${140 - (Math.pow((r + c) / ((size - 1) * 2), 0.6) * 120)}, 95%, 65%, 0.75)`,
+                          color: '#fff',
+                          textShadow: '0 1px 4px rgba(0,0,0,0.6)',
+                          boxShadow: isFormulaHighlight ? `0 0 30px hsla(${140 - (Math.pow((r + c) / ((size - 1) * 2), 0.6) * 120)}, 95%, 65%, 0.7)` : 'inset 0 0 10px rgba(0,0,0,0.2)'
+                      } : {};
+
+                      return (
                         <div
                           key={`${r}-${c}`}
                           onClick={() => mainMode === 'practice' && onCellClick(r, c)}
+                          style={formulaStyle}
                           className={cn(
-                            "flex items-center justify-center rounded-md font-bold transition-all relative overflow-hidden",
+                            "flex items-center justify-center rounded-md font-black transition-all relative overflow-hidden",
                             cellClasses, 
                             v ? (+v > 0) ? (isComplete ? "" : "text-emerald-50") : "text-transparent" : "text-transparent",
-                            !isComplete && v ? "bg-emerald-900/40 border border-emerald-500/20" : (!isComplete && "bg-slate-800/50 border border-slate-700/30"),
-                            isComplete && successColor,
-                            isComplete ? (successBorder || "border border-transparent") : "",
-                            isFormulaHighlight && mainMode === 'simulation' && "ring-2 ring-emerald-400 z-10",
+                            isFormula ? "border-2" : (
+                                !isComplete && v ? "bg-emerald-900/40 border border-emerald-500/20" : (!isComplete && "bg-slate-800/50 border border-slate-700/30")
+                            ),
+                            // Advanced initial state for Formula
+                            isFormula && !v && !isComplete && "bg-slate-900/60 border-emerald-500/10 border-dashed",
+                            isComplete && !isFormula && successColor,
+                            isComplete && !isFormula ? (successBorder || "border border-transparent") : "",
+                            isFormulaHighlight && mainMode === 'simulation' && "ring-2 ring-white z-20 scale-125 shadow-[0_0_30px_rgba(255,255,255,0.4)] rotate-[2deg] animate-in zoom-in duration-200",
                             isDynHighlight && highlightType === 'active' && "ring-2 ring-amber-400 bg-amber-900/40 z-10 scale-105",
                             isDynHighlight && highlightType === 'forced' && "ring-2 ring-purple-400 bg-purple-900/60 z-10 scale-110 shadow-lg shadow-purple-500/40",
                             isDynHighlight && highlightType === 'backtrack' && "ring-2 ring-rose-500 bg-rose-500/30 z-10 animate-pulse"
                           )}
                         >
-                          {v || ''}
+                          {v || (isFormula && !isComplete && <div className="opacity-[0.03] scale-150"><LayoutGrid size={24} /></div>)}
                           {/* Forced/Backtrack Indicators */}
                           {isDynHighlight && highlightType === 'forced' && (
                              <div className="absolute top-0.5 right-0.5 w-1.5 h-1.5 bg-purple-400 rounded-full animate-ping" />
@@ -236,28 +261,6 @@ export const MagicSquareCard = ({
           </div>
         </div>
       </div>
-
-      {/* Legend for Simulation States */}
-      {mainMode === 'simulation' && (
-        <div className="flex justify-center flex-wrap gap-4 mb-3 text-[10px] font-bold uppercase tracking-tighter">
-            <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-slate-900/30 border border-white/5">
-                <div className="w-2.5 h-2.5 bg-amber-400 rounded-sm shadow-[0_0_8px_rgba(251,191,36,0.5)]" />
-                <span className="text-amber-200/70">Active</span>
-            </div>
-            <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-slate-900/30 border border-white/5">
-                <div className="w-2.5 h-2.5 bg-purple-500 rounded-sm shadow-[0_0_8px_rgba(168,85,247,0.5)]" />
-                <span className="text-purple-300/70">Forced</span>
-            </div>
-            <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-slate-900/30 border border-white/5">
-                <div className="w-2.5 h-2.5 bg-rose-500 rounded-sm shadow-[0_0_8px_rgba(244,63,94,0.5)]" />
-                <span className="text-rose-400/70">Backtrack</span>
-            </div>
-            <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-slate-900/30 border border-white/5">
-                <div className="w-2.5 h-2.5 bg-emerald-400 rounded-sm shadow-[0_0_8px_rgba(52,211,153,0.5)]" />
-                <span className="text-emerald-300/80">Fixed</span>
-            </div>
-        </div>
-      )}
 
       {/* Footer Area */}
       {mainMode === 'simulation' ? (
