@@ -127,20 +127,6 @@ export default function SudokuBoard() {
                   isRunning={false} 
                 />
                 
-                {/* Info Box */}
-                <div className="mt-4 p-4 rounded-xl bg-slate-800/40 border border-amber-500/10 shadow-lg">
-                  <h4 className="text-xs font-bold text-amber-500 uppercase mb-2 tracking-widest flex items-center gap-2">
-                    <span className="w-1 h-1 bg-amber-500 rounded-full animate-pulse" />
-                    Algorithm Laboratory
-                  </h4>
-                  <p className="text-[10px] text-slate-500 leading-relaxed font-bold">
-                    Comparing parallel logic engines in real-time.
-                    <br/>
-                    <span className="text-amber-500/80 mr-1">SIM:</span> Parallel solving with selected strategies.
-                    <br/>
-                    <span className="text-amber-500/80 mr-1">LAB:</span> Observe efficiency and backtracking depth.
-                  </p>
-                </div>
               </div>
             );
           }

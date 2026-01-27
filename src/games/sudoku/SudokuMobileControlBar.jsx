@@ -1,5 +1,5 @@
 import React from 'react';
-import { Settings, Play, RotateCcw, X, GraduationCap, Zap, ChevronUp, Check } from 'lucide-react';
+import { Play, RotateCcw, Settings2, Square, ChevronDown, Volume2, VolumeX, Grid3X3, Check, BrainCircuit, LayoutGrid, Zap, Sliders, RefreshCw } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -16,171 +16,195 @@ export const SudokuMobileControlBar = ({
     difficulty,
     setDifficulty
 }) => {
-    const [isOpen, setIsOpen] = React.useState(false);
+    const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+    const [soundEnabled, setSoundEnabled] = React.useState(audioEngine.enabled);
 
-    // Adapting for generic handler naming just in case
-    const handleRun = onRunAll;
-    const handleReset = onResetAll;
+    const toggleSound = () => {
+        const next = !soundEnabled;
+        setSoundEnabled(next);
+        audioEngine.setEnabled(next);
+    };
 
     const SIZES = [4, 9];
-    const ALGOS = [
-        { id: 'backtrack', label: 'Backtrack' },
-        { id: 'naked', label: 'Naked Single' },
-        { id: 'dynamic', label: 'CSP (Dynamic)' },
+    const simulationAlgos = [
+        { id: 'backtrack', label: 'Backtrack', icon: RotateCcw },
+        { id: 'naked', label: 'Naked Single', icon: Zap },
+        { id: 'dynamic', label: 'CSP Solver', icon: BrainCircuit },
     ];
-    const DIFFICULTIES = ['easy', 'medium', 'hard'];
+
+    const allSelected = selectedAlgos.size === simulationAlgos.length;
+    const noneSelected = selectedAlgos.size === 0;
 
     return (
-        <>
-            {/* FAB / Trigger (Bottom Right) inside safe area, usually hidden if bar is visible */}
-            <div className="lg:hidden fixed bottom-6 right-6 z-40">
-                <button 
-                  onClick={() => setIsOpen(true)}
-                  className="bg-amber-500 text-white p-3 rounded-full shadow-xl shadow-amber-500/30 border border-white/20 active:scale-95 transition-all"
-                >
-                    <Settings size={24} />
-                </button>
-            </div>
-
-            {/* Bottom Sheet */}
-            <AnimatePresence>
-                {isOpen && (
-                    <>
-                        <motion.div 
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            onClick={() => setIsOpen(false)}
-                            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 lg:hidden"
-                        />
-                        <motion.div 
-                            initial={{ y: "100%" }}
-                            animate={{ y: 0 }}
-                            exit={{ y: "100%" }}
-                            transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                            className="fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-700 rounded-t-3xl z-50 p-6 lg:hidden max-h-[85vh] overflow-y-auto"
-                        >
-                            <div className="flex justify-between items-center mb-6">
-                                <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                                    <Zap className="text-amber-400" size={18} />
-                                    Sudoku Controls
-                                </h3>
-                                <button onClick={() => setIsOpen(false)} className="p-2 bg-slate-800 rounded-full text-slate-400">
-                                    <ChevronUp size={20} className="rotate-180" />
+        <div className="lg:hidden fixed bottom-6 left-0 right-0 z-[60] px-6 pointer-events-none">
+            <div className="max-w-7xl mx-auto flex flex-col gap-2 pointer-events-auto">
+                
+                {/* Expanded Menu */}
+                {isMenuOpen && (
+                    <div className="bg-slate-800/95 backdrop-blur-2xl border border-white/10 rounded-2xl p-4 shadow-2xl mb-2 animate-in slide-in-from-bottom-5 duration-300">
+                        {/* Header: Modes & Sound */}
+                        <div className="flex items-center justify-between mb-4 pb-3 border-b border-white/5">
+                            <div className="flex bg-slate-900/50 p-1 rounded-lg border border-white/5">
+                                <button 
+                                    onClick={() => setMainMode('practice')}
+                                    className={cn(
+                                        "px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-widest transition-all",
+                                        mainMode === 'practice' ? "bg-amber-400/20 border border-amber-400/30 text-amber-300" : "text-slate-500"
+                                    )}
+                                >
+                                    Practice
+                                </button>
+                                <button 
+                                    onClick={() => setMainMode('simulation')}
+                                    className={cn(
+                                        "px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-widest transition-all",
+                                        mainMode === 'simulation' ? "bg-amber-400/20 border border-amber-400/30 text-amber-300" : "text-slate-500"
+                                    )}
+                                >
+                                    Simulation
                                 </button>
                             </div>
+                            <button 
+                                onClick={toggleSound}
+                                className={cn(
+                                    "p-2 rounded-lg transition-all border",
+                                    soundEnabled ? "bg-amber-400/20 border-amber-400/30 text-amber-300" : "bg-slate-700/50 border-white/5 text-slate-500"
+                                )}
+                            >
+                                {soundEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
+                            </button>
+                        </div>
 
-                            {/* Mode Switch */}
-                            <div className="grid grid-cols-2 gap-2 mb-6 p-1 bg-slate-800 rounded-xl">
-                                {[
-                                    { id: 'simulation', label: 'Auto Solve', icon: Zap },
-                                    { id: 'practice', label: 'Practice', icon: GraduationCap }
-                                ].map(m => (
+                        {/* Size Selector */}
+                        <div className="mb-4">
+                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 block">Board Size</span>
+                            <div className="flex gap-2">
+                                {SIZES.map(size => (
                                     <button
-                                        key={m.id}
-                                        onClick={() => setMainMode(m.id)}
+                                        key={size}
+                                        onClick={() => setSelectedSize(size)}
                                         className={cn(
-                                            "py-3 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-all",
-                                            mainMode === m.id ? "bg-amber-500 text-white shadow-lg" : "text-slate-500 hover:text-slate-300" 
+                                            "flex-1 h-10 rounded-lg border text-xs font-bold transition-all",
+                                            selectedSize === size ? "bg-amber-500 border-amber-400 text-white shadow-lg shadow-amber-500/20" : "bg-slate-900/50 border-white/5 text-slate-500"
                                         )}
                                     >
-                                        <m.icon size={16} /> {m.label}
+                                        {size}x{size}
                                     </button>
                                 ))}
                             </div>
+                        </div>
 
-                            {/* Size Selector */}
-                            <div className="mb-6">
-                                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3 block">Board Size</label>
-                                <div className="grid grid-cols-2 gap-3">
-                                    {SIZES.map(s => (
+                        {/* Difficulty Selector (Always visible or practice only as needed) */}
+                        <div className="mb-4">
+                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 block">Difficulty</span>
+                            <div className="grid grid-cols-3 gap-2">
+                                {['easy', 'medium', 'hard'].map(diff => (
+                                    <button
+                                        key={diff}
+                                        onClick={() => setDifficulty(diff)}
+                                        className={cn(
+                                            "py-2 rounded-lg border text-[10px] font-bold uppercase transition-all",
+                                            difficulty === diff ? "bg-amber-500 border-amber-400 text-white" : "bg-slate-900/50 border-white/5 text-slate-500"
+                                        )}
+                                    >
+                                        {diff}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Algorithm Selection */}
+                        {mainMode === 'simulation' && (
+                            <div>
+                                <div className="flex justify-between items-center mb-2">
+                                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Algorithms</span>
+                                    <button 
+                                        onClick={() => {
+                                            const allIds = simulationAlgos.map(a => a.id);
+                                            if (selectedAlgos.size === allIds.length) {
+                                                allIds.forEach(id => toggleAlgo(id)); // This might need a bulk toggle if available
+                                            } else {
+                                                allIds.forEach(id => { if(!selectedAlgos.has(id)) toggleAlgo(id); });
+                                            }
+                                        }}
+                                        className="text-[9px] font-bold text-amber-400 uppercase tracking-tighter"
+                                    >
+                                        {allSelected ? "Deselect All" : "Select All"}
+                                    </button>
+                                </div>
+                                <div className="grid grid-cols-1 gap-2">
+                                    {simulationAlgos.map(algo => (
                                         <button
-                                            key={s}
-                                            onClick={() => setSelectedSize(s)}
+                                            key={algo.id}
+                                            onClick={() => toggleAlgo(algo.id)}
                                             className={cn(
-                                                "py-3 rounded-xl border font-bold text-sm transition-all",
-                                                selectedSize === s 
-                                                    ? "bg-amber-500/20 border-amber-500 text-amber-300" 
-                                                    : "bg-slate-800 border-slate-700 text-slate-400"
+                                                "flex items-center gap-2 p-2 rounded-xl border transition-all text-left",
+                                                selectedAlgos.has(algo.id) 
+                                                    ? "bg-amber-600/20 border-amber-500/50 text-white" 
+                                                    : "bg-slate-900/40 border-white/5 text-slate-500"
                                             )}
                                         >
-                                            {s}x{s}
+                                            <div className={cn(
+                                                "w-4 h-4 rounded flex items-center justify-center border transition-all",
+                                                selectedAlgos.has(algo.id) ? "bg-amber-500 border-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.3)]" : "border-slate-700 bg-slate-800"
+                                            )}>
+                                                {selectedAlgos.has(algo.id) && <Check size={10} className="text-white" />}
+                                            </div>
+                                            <span className="text-[10px] font-bold truncate uppercase">{algo.label}</span>
                                         </button>
                                     ))}
                                 </div>
                             </div>
-
-                            {/* Settings based on mode */}
-                            {mainMode === 'simulation' ? (
-                                <div className="mb-6">
-                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3 block">Algorithms</label>
-                                    <div className="space-y-2">
-                                        {ALGOS.map(algo => (
-                                            <button
-                                                key={algo.id}
-                                                onClick={() => toggleAlgo(algo.id)}
-                                                className={cn(
-                                                    "w-full flex items-center justify-between p-3 rounded-xl border transition-all",
-                                                    selectedAlgos.has(algo.id) 
-                                                        ? "bg-amber-500/10 border-amber-500/50 text-amber-100" 
-                                                        : "bg-slate-800 border-slate-700 text-slate-500"
-                                                )}
-                                            >
-                                                <span className="font-bold text-sm">{algo.label}</span>
-                                                {selectedAlgos.has(algo.id) && <Check size={16} className="text-amber-400" />}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="mb-6">
-                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3 block">Difficulty</label>
-                                    <div className="grid grid-cols-3 gap-2">
-                                        {DIFFICULTIES.map(diff => (
-                                            <button
-                                                key={diff}
-                                                onClick={() => setDifficulty(diff)}
-                                                className={cn(
-                                                    "py-2 rounded-lg border text-xs font-bold uppercase transition-all",
-                                                    difficulty === diff
-                                                        ? "bg-amber-500/20 border-amber-500 text-amber-300"
-                                                        : "bg-slate-800 border-slate-700 text-slate-500" 
-                                                )}
-                                            >
-                                                {diff}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Actions */}
-                            <div className="flex gap-3 mt-8">
-                                <button 
-                                    onClick={() => { handleReset(); setIsOpen(false); }}
-                                    className="flex-1 py-4 rounded-xl bg-slate-800 text-slate-300 font-bold border border-slate-700 flex items-center justify-center gap-2"
-                                >
-                                    <RotateCcw size={18} /> Reset
-                                </button>
-                                {mainMode === 'simulation' && (
-                                    <button 
-                                        onClick={() => { handleRun(); setIsOpen(false); }}
-                                        disabled={isRunningAny}
-                                        className={cn(
-                                            "flex-[2] py-4 rounded-xl font-bold text-white flex items-center justify-center gap-2 shadow-xl",
-                                            isRunningAny ? "bg-slate-700 cursor-not-allowed" : "bg-gradient-to-r from-amber-500 to-orange-500 shadow-amber-500/30"
-                                        )}
-                                    >
-                                        <Play size={18} fill="currentColor" />
-                                        {isRunningAny ? "Running..." : "Run Solver"}
-                                    </button>
-                                )}
-                            </div>
-
-                        </motion.div>
-                    </>
+                        )}
+                    </div>
                 )}
-            </AnimatePresence>
-        </>
+
+                {/* Main Bar */}
+                <div className="h-16 bg-slate-800/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl flex items-center justify-between p-2 relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-r from-amber-500/5 to-transparent pointer-events-none" />
+                    
+                    <div className="flex items-center gap-1.5 z-10">
+                        {/* Menu Toggle */}
+                        <button
+                            onClick={() => setIsMenuOpen(!isMenuOpen)}
+                            className={cn(
+                                "w-12 h-12 flex items-center justify-center rounded-xl transition-all active:scale-95",
+                                isMenuOpen ? "bg-amber-500 text-white shadow-lg shadow-amber-500/20" : "bg-slate-700/50 text-slate-400"
+                            )}
+                        >
+                            {isMenuOpen ? <ChevronDown size={20} /> : <Settings2 size={20} />}
+                        </button>
+
+                        {/* Reset Button */}
+                        <button
+                            onClick={onResetAll}
+                            className="w-12 h-12 flex items-center justify-center rounded-xl bg-slate-700/30 text-slate-400 hover:text-white active:scale-95 transition-all"
+                            title="Reset All"
+                        >
+                            <RotateCcw size={18} />
+                        </button>
+                    </div>
+
+                    {/* Main Action Button */}
+                    <div className="flex-1 pl-3 z-10">
+                        {isRunningAny ? (
+                            <button
+                                onClick={onResetAll}
+                                className="w-full h-12 flex items-center justify-center gap-2 bg-slate-700/50 text-slate-300 border border-white/10 rounded-xl font-bold text-xs uppercase tracking-widest active:scale-95 transition-all"
+                            >
+                                <div className="w-2.5 h-2.5 bg-slate-400 rounded-sm" /> HOLD ALL
+                            </button>
+                        ) : (
+                            <button
+                                onClick={onRunAll}
+                                className="w-full h-12 flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-400 text-white rounded-xl font-bold text-xs uppercase tracking-widest shadow-lg shadow-amber-500/40 active:scale-95 transition-all"
+                            >
+                                <Play size={16} fill="currentColor" /> RUN {mainMode === 'simulation' ? 'LAB' : 'PRACTICE'}
+                            </button>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </div>
     );
 };
