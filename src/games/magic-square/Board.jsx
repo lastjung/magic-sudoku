@@ -1,9 +1,9 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { MagicSquareCard } from './MagicSquareCard';
 import { generateMagicSquareSteps } from './logic';
-import { BookOpen, GraduationCap, LayoutGrid, Zap, RotateCcw, Sliders, Play, Check, BrainCircuit } from 'lucide-react';
+import { BookOpen, GraduationCap, LayoutGrid, Zap, RotateCcw, Sliders, Play, Check, BrainCircuit, Square } from 'lucide-react';
 import { cn } from '../../utils/cn';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useMagicSquareGame } from './useMagicSquareGame';
 import { MagicMobileControlBar } from './MagicMobileControlBar';
 import { MagicScoreboard } from './MagicScoreboard';
@@ -22,23 +22,24 @@ const MagicControlCard = ({
     setMainMode,
     onRunAll,
     onResetAll,
+    isRunningAny,
     showAlgoTable,
     setShowAlgoTable
 }) => {
   const simulationAlgos = [
-    { id: 'dynamic', label: 'Heuristic CSP', icon: BrainCircuit },
-    { id: 'heuristic', label: 'Smart Backtrack', icon: LayoutGrid },
-    { id: 'metric', label: 'Metric Backtrack', icon: Zap },
-    { id: 'backtrack', label: 'Recursive Backtrack', icon: RotateCcw },
-    { id: 'brute', label: 'Pure Brute Force', icon: Sliders },
-    { id: 'formula', label: 'Direct Formula', icon: BookOpen },
+    { id: 'formula', label: 'Formula', icon: BookOpen },
+    { id: 'dynamic', label: 'CSP Solver', icon: BrainCircuit },
+    { id: 'heuristic', label: 'Smart BT', icon: LayoutGrid },
+    { id: 'metric', label: 'Metric BT', icon: Zap },
+    { id: 'backtrack', label: 'Recursive', icon: RotateCcw },
+    { id: 'brute', label: 'Brute Force', icon: Sliders },
   ];
 
   const allSelected = selectedAlgos.size === simulationAlgos.length;
   const noneSelected = selectedAlgos.size === 0;
 
   return (
-    <div className="bg-slate-800/60 backdrop-blur-xl border border-emerald-500/30 rounded-xl p-4 flex flex-col gap-3 shadow-2xl relative overflow-hidden group h-full min-h-[400px]">
+    <div className="bg-slate-800/60 backdrop-blur-xl border border-emerald-500/30 rounded-xl p-4 flex flex-col gap-3 shadow-2xl relative overflow-hidden group h-full">
       <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-transparent pointer-events-none" />
       
       {/* Header */}
@@ -50,77 +51,86 @@ const MagicControlCard = ({
       {/* Main Mode Switcher */}
       <div className="grid grid-cols-2 gap-1 p-1 bg-slate-900/50 rounded-lg border border-white/5">
         {[
-            { id: 'simulation', label: 'LAB / Simulation', icon: Zap },
-            { id: 'practice', label: 'PRACTICE / Play', icon: GraduationCap }
+            { id: 'simulation', label: 'SIMULATION', icon: Zap },
+            { id: 'practice', label: 'PRACTICE', icon: GraduationCap }
         ].map(m => (
             <button 
                 key={m.id}
                 onClick={() => setMainMode(m.id)}
                 className={cn(
-                    "flex items-center justify-center gap-1.5 py-2.5 rounded-md text-[9px] font-black tracking-widest transition-all",
+                    "flex items-center justify-center gap-1.5 py-2 rounded-md text-[9px] font-black tracking-widest transition-all",
                     mainMode === m.id 
                     ? "bg-emerald-400/20 border border-emerald-400/30 text-emerald-300 shadow-lg shadow-emerald-500/10" 
                     : "bg-transparent text-slate-500 hover:text-slate-400 hover:bg-white/5"
                 )}
             >
-                <m.icon size={12} /> {m.id.toUpperCase()}
+                <m.icon size={11} /> {m.label}
             </button>
         ))}
       </div>
 
       {/* Primary Actions (Run / Reset) */}
-      <div className="flex gap-2 mt-1">
+      <div className="flex gap-2">
         <button 
           onClick={onResetAll}
-          className="flex-1 flex items-center justify-center gap-2 py-3 bg-slate-700/50 hover:bg-slate-700 text-slate-300 rounded-xl font-bold text-xs border border-slate-600/50 transition-all active:scale-95"
+          className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-slate-700/50 hover:bg-slate-700 text-slate-300 rounded-xl font-bold text-[10px] border border-slate-600/50 transition-all active:scale-95"
         >
-          <RotateCcw size={14} /> RESET
+          <RotateCcw size={12} /> RESET
         </button>
-        <button 
-          onClick={onRunAll}
-          disabled={mainMode === 'practice'}
-          className={cn(
-              "flex-[2] flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-xs shadow-xl transition-all active:scale-95",
-              mainMode === 'practice' 
-                ? "bg-slate-800 text-slate-600 cursor-not-allowed" 
-                : "bg-emerald-400/90 hover:bg-emerald-400 text-white shadow-emerald-400/20 font-black tracking-widest"
-          )}
-        >
-          <Play size={14} fill="currentColor" /> RUN SELECTED
-        </button>
+        {isRunningAny ? (
+          <button 
+            onClick={onResetAll}
+            className="flex-[1.5] flex items-center justify-center gap-2 py-2.5 bg-slate-700/50 hover:bg-slate-700/80 text-slate-300 rounded-xl font-bold text-[10px] border border-white/10 transition-all active:scale-95"
+          >
+            <Square size={12} fill="currentColor" /> HOLD
+          </button>
+        ) : (
+          <button 
+            onClick={onRunAll}
+            disabled={mainMode === 'practice'}
+            className={cn(
+                "flex-[1.5] flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-[10px] shadow-xl transition-all active:scale-95",
+                mainMode === 'practice' 
+                  ? "bg-slate-800 text-slate-600 cursor-not-allowed" 
+                  : "bg-emerald-400/90 hover:bg-emerald-400 text-white shadow-emerald-400/20 font-black tracking-widest"
+            )}
+          >
+            <Play size={12} fill="currentColor" /> RUN SELECTED
+          </button>
+        )}
       </div>
 
       {/* Algorithm Selection (Checkboxes) - only for simulation */}
       {mainMode === 'simulation' && (
-        <div className="flex flex-col gap-2 mt-2">
+        <div className="flex flex-col gap-2">
           <button 
              onClick={toggleAllAlgos}
              className={cn(
-               "flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-900/40 border transition-all hover:bg-emerald-500/10",
+               "flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-slate-900/40 border transition-all hover:bg-emerald-500/10",
                noneSelected ? "border-slate-700 text-slate-500" : "border-emerald-500/20 text-emerald-300"
              )}
           >
              <div className={cn(
-                 "w-4 h-4 rounded-md flex items-center justify-center transition-all",
-                 allSelected ? "bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.3)]" : 
+                 "w-4 h-4 rounded flex items-center justify-center transition-all shrink-0",
+                 allSelected ? "bg-emerald-400" : 
                  (noneSelected ? "border border-slate-700 bg-slate-800/50" : "border border-emerald-400/30 bg-emerald-400/10")
              )}>
-                 {allSelected && <div className="w-1.5 h-1.5 bg-white rounded-full shadow-sm" />}
+                 {allSelected && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
                  {!allSelected && !noneSelected && <div className="w-1.5 h-1.5 bg-emerald-400/80 rounded-sm" />}
              </div>
-             <span className="text-[10px] font-black uppercase tracking-widest">
-                {allSelected ? "Deselect All" : noneSelected ? "Select All" : "Reset Selection"} ({selectedAlgos.size}/{simulationAlgos.length})
+             <span className="text-[11px] font-black uppercase tracking-widest">
+                {allSelected ? "Unselect" : noneSelected ? "Select All" : "Reset Selection"} ({selectedAlgos.size}/{simulationAlgos.length})
              </span>
           </button>
 
-          <div className="grid grid-cols-1 gap-1.5">
+          <div className="grid grid-cols-2 gap-1.5">
             {simulationAlgos.map(algo => (
               <label 
                 key={algo.id}
                 className={cn(
-                  "flex items-center gap-3 px-3 py-2 rounded-lg border transition-all cursor-pointer group",
+                  "flex items-center gap-2 px-2 py-1.5 rounded-lg border transition-all cursor-pointer group",
                   selectedAlgos.has(algo.id) 
-                    ? "bg-emerald-600/10 border-emerald-500/40 text-white" 
+                    ? "bg-emerald-600/10 border-emerald-500/30 text-white" 
                     : "bg-slate-900/20 border-white/5 text-slate-500 hover:text-slate-400 hover:border-white/10"
                 )}
               >
@@ -131,15 +141,15 @@ const MagicControlCard = ({
                   onChange={() => toggleAlgo(algo.id)}
                 />
                 <div className={cn(
-                    "w-4 h-4 rounded-md flex items-center justify-center transition-all",
+                    "w-3 h-3 rounded flex items-center justify-center transition-all",
                     selectedAlgos.has(algo.id) 
-                      ? "bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.3)]" 
+                      ? "bg-emerald-400 shadow-[0_0_4px_rgba(52,211,153,0.3)]" 
                       : "border border-slate-700 bg-slate-800/50 group-hover:border-slate-600"
                 )}>
-                    {selectedAlgos.has(algo.id) && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
+                    {selectedAlgos.has(algo.id) && <div className="w-1 h-1 bg-white rounded-full" />}
                 </div>
-                <algo.icon size={13} className={selectedAlgos.has(algo.id) ? "text-emerald-400" : "text-slate-600"} />
-                <span className="text-[11px] font-black uppercase tracking-tight">{algo.label}</span>
+                <algo.icon size={11} className={selectedAlgos.has(algo.id) ? "text-emerald-400" : "text-slate-600"} />
+                <span className="text-[10px] font-black uppercase tracking-tighter whitespace-nowrap">{algo.label}</span>
               </label>
             ))}
           </div>
@@ -190,6 +200,7 @@ export default function MagicSquareBoard({ speed }) {
   const [mainMode, setMainMode] = useState('simulation');
   const [triggerRun, setTriggerRun] = useState(0);
   const [triggerReset, setTriggerReset] = useState(0);
+  const [runningAlgos, setRunningAlgos] = useState(new Set());
   
   // Scoreboard state
   const [showScoreboard, setShowScoreboard] = useState(false);
@@ -228,12 +239,14 @@ export default function MagicSquareBoard({ speed }) {
   const handleRunAll = () => {
     resultsRef.current = {};
     runningSetRef.current = new Set(selectedAlgos);
+    setRunningAlgos(new Set(selectedAlgos));
     setShowScoreboard(false);
     setTriggerRun(prev => prev + 1);
   };
 
   const handleResetAll = () => {
     runningSetRef.current = new Set();
+    setRunningAlgos(new Set());
     setShowScoreboard(false);
     setTriggerReset(prev => prev + 1);
   };
@@ -242,12 +255,12 @@ export default function MagicSquareBoard({ speed }) {
     if (mainMode !== 'simulation') return;
     
     const labels = {
-      dynamic: { name: 'Heuristic CSP', complexity: 'O(Exp)' },
-      heuristic: { name: 'Smart Backtrack', complexity: 'O(Exp)' },
-      metric: { name: 'Metric Backtrack', complexity: 'O(Exp)' },
-      backtrack: { name: 'Recursive Backtrack', complexity: 'O(n!)' },
-      brute: { name: 'Pure Brute Force', complexity: 'O(Exp)' },
-      formula: { name: 'Direct Formula', complexity: 'O(n^2)' }
+      dynamic: { name: 'Heuristic CSP' },
+      heuristic: { name: 'Smart Backtrack' },
+      metric: { name: 'Metric Backtrack' },
+      backtrack: { name: 'Recursive Backtrack' },
+      brute: { name: 'Pure Brute Force' },
+      formula: { name: 'Direct Formula' }
     };
 
     if (runningSetRef.current.has(algoId)) {
@@ -259,6 +272,12 @@ export default function MagicSquareBoard({ speed }) {
             complexity: labels[algoId]?.complexity
         };
         runningSetRef.current.delete(algoId);
+        
+        setRunningAlgos(prev => {
+            const next = new Set(prev);
+            next.delete(algoId);
+            return next;
+        });
 
         if (runningSetRef.current.size === 0 && Object.keys(resultsRef.current).length > 0) {
             setScoreboardResults(Object.values(resultsRef.current));
@@ -267,14 +286,15 @@ export default function MagicSquareBoard({ speed }) {
     }
   };
 
-  const activeAlgos = [...selectedAlgos];
-  
-  // Combine boards and controller into a list for indexed rendering
-  const renderItems = [];
-  if (mainMode === 'simulation') {
-    activeAlgos.forEach((algoId, idx) => {
-      renderItems.push({ type: 'board', algoId });
-    });
+   const ALGO_ORDER = ['formula', 'dynamic', 'heuristic', 'metric', 'backtrack', 'brute'];
+   const activeAlgos = [...selectedAlgos].sort((a, b) => ALGO_ORDER.indexOf(a) - ALGO_ORDER.indexOf(b));
+   
+   // Combine boards and controller into a list for indexed rendering
+   const renderItems = [];
+   if (mainMode === 'simulation') {
+     activeAlgos.forEach((algoId) => {
+       renderItems.push({ type: 'board', algoId });
+     });
   } else {
     renderItems.push({ type: 'board', algoId: 'formula' });
   }
@@ -284,11 +304,11 @@ export default function MagicSquareBoard({ speed }) {
   renderItems.splice(insertIdx, 0, { type: 'control' });
 
   return (
-    <div className="max-w-full mx-auto px-2 py-2">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-start">
+    <div className="max-w-7xl mx-auto px-6 pt-0 pb-28 lg:pb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {renderItems.map((item, index) => (
             item.type === 'control' ? (
-                <div className="hidden md:block">
+                <div className="hidden lg:block">
                   <MagicControlCard 
                       key="control-card"
                       selectedSize={selectedSize}
@@ -300,6 +320,7 @@ export default function MagicSquareBoard({ speed }) {
                       setMainMode={setMainMode}
                       onRunAll={handleRunAll}
                       onResetAll={handleResetAll}
+                      isRunningAny={runningAlgos.size > 0}
                       showAlgoTable={showAlgoTable}
                       setShowAlgoTable={setShowAlgoTable}
                   />
@@ -327,7 +348,7 @@ export default function MagicSquareBoard({ speed }) {
                       <div className="p-2 bg-emerald-500/20 rounded-lg text-emerald-400">
                           <Sliders size={20} />
                       </div>
-                      <h4 className="text-sm font-black text-white uppercase tracking-widest">실시간 성능 비교 분석 (Performance Analysis)</h4>
+                      <h4 className="text-sm font-black text-white uppercase tracking-widest">Real-time Performance Analysis</h4>
                   </div>
                   <div className="flex items-center gap-2 text-[10px] font-bold text-slate-500 uppercase tracking-tighter">
                       <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -363,16 +384,20 @@ export default function MagicSquareBoard({ speed }) {
                   <div className="text-center md:text-left flex-1">
                       <h4 className="text-emerald-300 font-black text-xl mb-2 uppercase tracking-widest">Algorithm Comparison Lab</h4>
                       <p className="text-emerald-100/60 text-sm leading-relaxed max-w-2xl font-semibold">
-                          실험실 모드에서는 동일한 <span className="text-emerald-400">{selectedSize}x{selectedSize}</span> 환경에서 다양한 논리 엔진이 어떻게 동작하는지 관찰합니다. 
+                          In LAB mode, observe how various logic engines operate within the same <span className="text-emerald-400">{selectedSize}x{selectedSize}</span> environment.
                           <br className="hidden md:block" />
-                          직관적인 공식(Formula)부터 복잡한 백트래킹(Backtracking)까지, 각 알고리즘의 효율성을 실시간으로 비교해보세요.
+                          Compare the efficiency of each algorithm in real-time, from the intuitive Direct Formula to complex Backtracking.
                       </p>
                   </div>
               </div>
           </div>
       )}
 
-      {showAlgoTable && <MagicAlgoTable />}
+      <AnimatePresence>
+        {showAlgoTable && (
+          <MagicAlgoTable onClose={() => setShowAlgoTable(false)} />
+        )}
+      </AnimatePresence>
 
       {/* Mobile Floating Menu */}
       <MagicMobileControlBar 
@@ -383,7 +408,7 @@ export default function MagicSquareBoard({ speed }) {
           toggleAllAlgos={toggleAllAlgos}
           onRunAll={handleRunAll}
           onResetAll={handleResetAll}
-          isRunningAny={false}
+          isRunningAny={runningAlgos.size > 0}
           mainMode={mainMode}
           setMainMode={setMainMode}
           showAlgoTable={showAlgoTable}
@@ -406,12 +431,12 @@ const ScoreCard = ({ algoId, size, triggerRun, triggerReset, speed, steps, onCom
     const [isDone, setIsDone] = useState(false);
 
     const labels = {
-      dynamic: { name: 'Heuristic CSP', desc: '제약 충돌 회피 알고리즘', color: 'text-emerald-400/80', bg: 'bg-emerald-400/60' },
-      heuristic: { name: 'Smart Backtrack', desc: '강제 할당 기반 백트래킹', color: 'text-teal-400/80', bg: 'bg-teal-400/60' },
-      metric: { name: 'Metric Backtrack', desc: '거리 기반 가지치기', color: 'text-lime-400/80', bg: 'bg-lime-400/60' },
-      backtrack: { name: 'Recursive Backtrack', desc: '재귀적 탐색 알고리즘', color: 'text-rose-400', bg: 'bg-rose-500' },
-      brute: { name: 'Pure Brute Force', desc: '단순 전수 조사', color: 'text-slate-400', bg: 'bg-slate-500' },
-      formula: { name: 'Direct Formula', desc: '정적 마방진 공식', color: 'text-emerald-400', bg: 'bg-emerald-500' }
+      dynamic: { name: 'Heuristic CSP', desc: 'Constraint satisfaction algorithm', color: 'text-emerald-400/80', bg: 'bg-emerald-400/60' },
+      heuristic: { name: 'Smart Backtrack', desc: 'Forced-assignment backtracking', color: 'text-teal-400/80', bg: 'bg-teal-400/60' },
+      metric: { name: 'Metric Backtrack', desc: 'Distance-based pruning', color: 'text-lime-400/80', bg: 'bg-lime-400/60' },
+      backtrack: { name: 'Recursive Backtrack', desc: 'Classic recursive search', color: 'text-rose-400', bg: 'bg-rose-500' },
+      brute: { name: 'Pure Brute Force', desc: 'Exhaustive permutation search', color: 'text-slate-400', bg: 'bg-slate-500' },
+      formula: { name: 'Direct Formula', desc: 'Static magic square construction', color: 'text-emerald-400', bg: 'bg-emerald-500' }
     };
 
     const l = labels[algoId] || { name: algoId, desc: '', color: 'text-white', bg: 'bg-white' };

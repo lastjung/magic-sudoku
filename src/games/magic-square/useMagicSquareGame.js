@@ -135,7 +135,7 @@ export const useMagicSquareGame = ({ size, mainMode, algoMode, steps, speed, tri
                 setTargetNum(size * size + 999);
                 if (isSoundEnabled) audioEngine.playSuccess();
                 setDynamicHighlight(null);
-                setDynamicDesc(`🎉 정답 발견! 모든 방향의 합이 ${magicConst}입니다.`);
+                setDynamicDesc(`🎉 Solution found! All rows, cols, and diagonals sum to ${magicConst}.`);
                 if (onComplete) onComplete({ time: elapsed, attempts: solver.filledCount });
                 return;
             }
@@ -157,7 +157,7 @@ export const useMagicSquareGame = ({ size, mainMode, algoMode, steps, speed, tri
 
                 if (solver.firstPosIdx >= solver.firstNumberPositions.length) {
                     setIsPlaying(false);
-                    setDynamicDesc("해답을 찾지 못했습니다.");
+                    setDynamicDesc("No solution found.");
                     return;
                 }
 
@@ -166,7 +166,7 @@ export const useMagicSquareGame = ({ size, mainMode, algoMode, steps, speed, tri
                 used[1] = true;
                 solver.filledCount = 1;
                 setDynamicHighlight({ r: Math.floor(pos1/size), c: pos1%size, type: 'active' });
-                setDynamicDesc(`시작 위치 최적화: ${pos1}번 칸에 1을 배치`);
+                setDynamicDesc(`Optimizing start: Placing 1 at cell ${pos1}`);
                 
                 const newB = [];
                 for (let rr = 0; rr < size; rr++) newB.push(flatBoard.slice(rr * size, (rr + 1) * size));
@@ -207,13 +207,13 @@ export const useMagicSquareGame = ({ size, mainMode, algoMode, steps, speed, tri
                 if (currentFrame.triedNum === 0) {
                     numToTry = currentFrame.forcedVal;
                     currentFrame.triedNum = 999; // Only try once
-                    setDynamicDesc(`나머지 3칸 합을 보니, 여기는 무조건 ${numToTry}이어야 합니다.`);
+                    setDynamicDesc(`Logical constraint: This cell must be ${numToTry}.`);
                 }
             } else {
                 numToTry = (currentFrame.triedNum === 0 ? 2 : currentFrame.triedNum + 1);
                 while (numToTry <= size * size && used[numToTry]) numToTry++;
                 currentFrame.triedNum = numToTry;
-                setDynamicDesc(`${currentFrame.cellIdx}번 칸에 ${numToTry}을 넣어봅니다.`);
+                setDynamicDesc(`Trying ${numToTry} at cell ${currentFrame.cellIdx}...`);
             }
 
             if (numToTry !== null && numToTry >= 2 && numToTry <= size * size && !used[numToTry]) {
@@ -241,7 +241,7 @@ export const useMagicSquareGame = ({ size, mainMode, algoMode, steps, speed, tri
                     setStats(prev => ({ ...prev, attempts: prev.attempts + 1 }));
                 } else {
                     setDynamicHighlight({ r, c, type: 'backtrack' });
-                    setDynamicDesc(`❌ ${numToTry}을 넣으면 규칙에 어긋납니다. 퇴각!`);
+                    setDynamicDesc(`❌ Conflict! ${numToTry} violates magic square rules. Backtracking...`);
                     flatBoard[currentFrame.cellIdx] = null;
                     used[numToTry] = false;
                     setStats(prev => ({ ...prev, attempts: prev.attempts + 1 }));
@@ -255,7 +255,7 @@ export const useMagicSquareGame = ({ size, mainMode, algoMode, steps, speed, tri
                     const prevVal = flatBoard[prevFrame.cellIdx];
                     used[prevVal] = false;
                     setDynamicHighlight({ r: Math.floor(prevFrame.cellIdx/size), c: prevFrame.cellIdx%size, type: 'backtrack' });
-                    setDynamicDesc(`🔙 ${prevVal}은 아닌 것 같습니다. 되돌아갑니다.`);
+                    setDynamicDesc(`🔙 Backtracking: ${prevVal} didn't work. Returning...`);
                     flatBoard[prevFrame.cellIdx] = null;
                 }
             }
@@ -273,7 +273,7 @@ export const useMagicSquareGame = ({ size, mainMode, algoMode, steps, speed, tri
                 setTargetNum(size * size + 999);
                 if (isSoundEnabled) audioEngine.playSuccess();
                 setDynamicHighlight(null);
-                setDynamicDesc(`🎉 정답 발견! 모든 방향의 합이 ${magicConst}입니다.`);
+                setDynamicDesc(`🎉 Solution found! All rows, cols, and diagonals sum to ${magicConst}.`);
                 if (onComplete) onComplete({ time: elapsed, attempts: size * size });
                 return;
             }
@@ -317,7 +317,7 @@ export const useMagicSquareGame = ({ size, mainMode, algoMode, steps, speed, tri
                 const posToClear = board.lastIndexOf(solver.currentNum);
                 if (posToClear !== -1) {
                     setDynamicHighlight({ r: Math.floor(posToClear/size), c: posToClear%size, type: 'backtrack' });
-                    setDynamicDesc(`백트래킹: ${solver.currentNum}번 숫자를 이동 시도...`);
+                    setDynamicDesc(`Backtracking: Searching alternative for value ${solver.currentNum}...`);
                     board[posToClear] = null;
                 }
                 solver.currentNum--;
@@ -332,7 +332,7 @@ export const useMagicSquareGame = ({ size, mainMode, algoMode, steps, speed, tri
                 const r = Math.floor(pos / size);
                 const c = pos % size;
                 setDynamicHighlight({ r, c, type: 'active' });
-                setDynamicDesc(`(${r}, ${c}) 위치에 ${solver.currentNum}을 배치해봅니다.`);
+                setDynamicDesc(`Placing ${solver.currentNum} at (${r}, ${c})...`);
 
                 let isValid = true;
                 if (algoMode !== 'brute') {
@@ -371,11 +371,11 @@ export const useMagicSquareGame = ({ size, mainMode, algoMode, steps, speed, tri
                     if (isSoundEnabled) audioEngine.playNote(solver.currentNum);
                     solver.currentNum++;
                     if (algoMode === 'brute' && solver.currentNum <= size * size) {
-                         setDynamicDesc(`${solver.currentNum}번 배치 완료 (검증 건너뜀)`);
+                         setDynamicDesc(`Value ${solver.currentNum} placed (Skipping validation)`);
                     }
                 } else {
                     setDynamicHighlight({ r, c, type: 'backtrack' });
-                    setDynamicDesc(algoMode === 'brute' ? `최종 합계 불일치: 처음부터 다시 탐색` : `합계 충돌: (${r}, ${c}) 위치에서 ${solver.currentNum}은 탈락!`);
+                    setDynamicDesc(algoMode === 'brute' ? `Final sum mismatch: Restarting search...` : `Sum conflict: Value ${solver.currentNum} at (${r}, ${c}) failed!`);
                     board[pos] = null;
                     setStats(prev => ({ ...prev, attempts: prev.attempts + 1 }));
                 }
@@ -398,7 +398,7 @@ export const useMagicSquareGame = ({ size, mainMode, algoMode, steps, speed, tri
 
             if (solver.filledCount === size * size) {
                 setIsPlaying(false);
-                setDynamicDesc(`🎉 정답 발견! 모든 방향의 합이 ${magicConst}입니다.`);
+                setDynamicDesc(`🎉 Solution found! All rows, cols, and diagonals sum to ${magicConst}.`);
                 setDynamicHighlight(null);
                 setTargetNum(size * size + 999);
                 if (isSoundEnabled) audioEngine.playSuccess();
@@ -436,7 +436,7 @@ export const useMagicSquareGame = ({ size, mainMode, algoMode, steps, speed, tri
                 used[1] = true;
                 solver.filledCount = 1;
                 setDynamicHighlight({ r: Math.floor(pos1/size), c: pos1%size, type: 'active' });
-                setDynamicDesc(`최적화 시작: ${pos1}번 칸에 1을 배치합니다.`);
+                setDynamicDesc(`Optimizing start: Placing 1 at cell ${pos1}.`);
                 
                 const newB = [];
                 for (let rr = 0; rr < size; rr++) newB.push(flatBoard.slice(rr * size, (rr + 1) * size));
@@ -488,13 +488,13 @@ export const useMagicSquareGame = ({ size, mainMode, algoMode, steps, speed, tri
                 if (currentFrame.triedNum === 0) {
                     numToTry = currentFrame.forcedVal;
                     currentFrame.triedNum = 999;
-                    setDynamicDesc(`논리적 추론: 여기에 올 숫자는 ${numToTry}뿐입니다.`);
+                    setDynamicDesc(`Logical inference: Only ${numToTry} is valid here.`);
                 }
             } else {
                 numToTry = (currentFrame.triedNum === 0 ? 2 : currentFrame.triedNum + 1);
                 while (numToTry <= size * size && used[numToTry]) numToTry++;
                 currentFrame.triedNum = numToTry;
-                setDynamicDesc(`현재 최적의 칸(${r}, ${c})에 ${numToTry} 시도 중...`);
+                setDynamicDesc(`Trying ${numToTry} at optimal cell (${r}, ${c})...`);
             }
 
             if (numToTry !== null && numToTry >= 2 && numToTry <= size * size && !used[numToTry]) {
@@ -520,7 +520,7 @@ export const useMagicSquareGame = ({ size, mainMode, algoMode, steps, speed, tri
                     setStats(prev => ({ ...prev, attempts: prev.attempts + 1 }));
                 } else {
                     setDynamicHighlight({ r, c, type: 'backtrack' });
-                    setDynamicDesc(`제약 조건 위반: (${r}, ${c})에서 충돌 발생!`);
+                    setDynamicDesc(`Constraint violation: Conflict detected at (${r}, ${c})!`);
                     flatBoard[currentFrame.cellIdx] = null;
                     used[numToTry] = false;
                     setStats(prev => ({ ...prev, attempts: prev.attempts + 1 }));
@@ -534,7 +534,7 @@ export const useMagicSquareGame = ({ size, mainMode, algoMode, steps, speed, tri
                     const prevVal = flatBoard[prevFrame.cellIdx];
                     used[prevVal] = false;
                     setDynamicHighlight({ r: Math.floor(prevFrame.cellIdx/size), c: prevFrame.cellIdx%size, type: 'backtrack' });
-                    setDynamicDesc(`백트래킹: ${prevVal}을 제거하고 대안을 찾습니다.`);
+                    setDynamicDesc(`Backtracking: Removing ${prevVal} and searching alternatives...`);
                     flatBoard[prevFrame.cellIdx] = null;
                 }
             }

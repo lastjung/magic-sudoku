@@ -146,7 +146,7 @@ export const Dashboard = ({ data, speed, setSpeed, arraySize, setArraySize, onRa
   const visibleAlgorithms = ALGORITHMS.filter(algo => selectedIds.has(algo.id));
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-8 pb-28 lg:pb-8">
+    <div className="max-w-7xl mx-auto px-6 pt-0 pb-28 lg:pb-8">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* First 2 Algorithms */}
         {visibleAlgorithms.slice(0, 2).map((algo) => (

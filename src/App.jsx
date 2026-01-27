@@ -17,7 +17,7 @@ function App() {
   }, [arraySize]);
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 selection:bg-indigo-500/30 pb-20 font-sans">
+    <div className="min-h-screen bg-slate-900 text-slate-100 selection:bg-indigo-500/30 pb-20 font-sans overflow-x-hidden">
       <div className="fixed inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(67,56,202,0.1),transparent)] pointer-events-none" />
       
       <ControlPanel 
@@ -30,7 +30,7 @@ function App() {
         onRandomize={randomize}
       />
 
-      <main className="relative container mx-auto px-4 py-8">
+      <main className="relative max-w-7xl mx-auto px-6 pt-6 pb-8">
         <AnimatePresence mode="wait">
           {activeTab === 'sorting' && (
             <motion.div

@@ -47,7 +47,7 @@ export const ControlCard = ({
             onClick={onStopAll}
             className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-lg font-bold text-xs border border-rose-500/30 transition-all active:scale-95"
           >
-            <Square size={14} fill="currentColor" /> STOP ALL
+            <Square size={14} fill="currentColor" /> HOLD ALL
           </button>
         ) : (
           <button 

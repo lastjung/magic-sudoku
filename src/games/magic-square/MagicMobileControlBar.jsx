@@ -13,7 +13,8 @@ export const MagicMobileControlBar = ({
   onResetAll,
   isRunningAny,
   mainMode,
-  setMainMode
+  setMainMode,
+  setShowAlgoTable
 }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(audioEngine.enabled);
@@ -26,12 +27,12 @@ export const MagicMobileControlBar = ({
 
   const ALL_SIZES = [3, 4, 5, 6, 7, 8, 9, 10];
   const simulationAlgos = [
+    { id: 'formula', label: 'Direct Formula', icon: Grid3X3 },
     { id: 'dynamic', label: 'Heuristic CSP', icon: BrainCircuit },
     { id: 'heuristic', label: 'Smart Backtrack', icon: LayoutGrid },
     { id: 'metric', label: 'Metric Backtrack', icon: Sliders },
     { id: 'backtrack', label: 'Recursive Backtrack', icon: RefreshCcw },
     { id: 'brute', label: 'Pure Brute Force', icon: Zap },
-    { id: 'formula', label: 'Direct Formula', icon: Grid3X3 }
   ];
 
   const allSelected = selectedAlgos.size === simulationAlgos.length;
@@ -151,6 +152,14 @@ export const MagicMobileControlBar = ({
               {isMenuOpen ? <ChevronDown size={20} /> : <Settings2 size={20} />}
             </button>
 
+            {/* Engine Matrix Button */}
+            <button
+              onClick={() => setShowAlgoTable(true)}
+              className="w-12 h-12 flex items-center justify-center rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:text-emerald-300 active:scale-95 transition-all"
+            >
+              <Grid3X3 size={18} />
+            </button>
+
             {/* Reset Button */}
             <button
               onClick={onResetAll}
@@ -165,9 +174,9 @@ export const MagicMobileControlBar = ({
             {isRunningAny ? (
               <button
                 onClick={onResetAll}
-                className="w-full h-12 flex items-center justify-center gap-2 bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-xl font-black text-xs uppercase tracking-widest shadow-lg shadow-rose-900/20 active:scale-95 transition-all"
+                className="w-full h-12 flex items-center justify-center gap-2 bg-slate-700/50 text-slate-300 border border-white/10 rounded-xl font-black text-xs uppercase tracking-widest active:scale-95 transition-all"
               >
-                <div className="w-2.5 h-2.5 bg-rose-500 rounded-sm animate-pulse" /> STOP / RESET
+                <div className="w-2.5 h-2.5 bg-slate-400 rounded-sm" /> HOLD ALL
               </button>
             ) : (
               <button
