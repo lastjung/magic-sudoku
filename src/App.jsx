@@ -7,7 +7,7 @@ import { generateRandomArray } from './utils/data';
 import { motion, AnimatePresence } from 'framer-motion';
 
 function App() {
-  const [activeTab, setActiveTab] = useState('magic'); // 'sorting', 'magic', 'sudoku'
+  const [activeTab, setActiveTab] = useState('sudoku'); // 'sorting', 'magic', 'sudoku'
   const [arraySize, setArraySize] = useState(50);
   const [speed, setSpeed] = useState(800);
   const [data, setData] = useState(() => generateRandomArray(50));

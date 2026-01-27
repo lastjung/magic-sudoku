@@ -308,7 +308,7 @@ export default function MagicSquareBoard({ speed }) {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {renderItems.map((item, index) => (
             item.type === 'control' ? (
-                <div className="hidden lg:block">
+                <div key="control-wrapper" className="hidden lg:block">
                   <MagicControlCard 
                       key="control-card"
                       selectedSize={selectedSize}
