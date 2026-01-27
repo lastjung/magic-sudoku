@@ -254,6 +254,37 @@ export const MagicSquareCard = ({
                         isComplete && !isFormula && successColor,
                         isComplete && !isFormula ? (successBorder || "border border-transparent") : "",
                         isFormulaHighlight && mainMode === 'simulation' && "ring-2 ring-white z-20 shadow-[0_0_30px_rgba(255,255,255,0.4)] animate-in zoom-in duration-200",
+                        
+                        // Phase 2: Scan (Diagonals vs Others)
+                        isFormula && currentStep?.type === 'scan' && (
+                           ((r % 4 === c % 4) || (r % 4 + c % 4 === 3)) 
+                             ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-200" // Keep (Diagonal)
+                             : "bg-slate-700/50 border-slate-600/50 text-slate-400" // Others (Grey)
+                        ),
+
+                        // Phase 3 & 4: Strict Group Pop & Flip
+                        isFormula && (currentStep?.type === 'pop_prepare' || currentStep?.type === 'mass_invert') && 
+                        highlight?.targets?.some(t => t.r === r && t.c === c) && (
+                            cn(
+                                "z-30 transition-all duration-700 ease-in-out",
+                                // Pop Up Phase
+                                currentStep?.type === 'pop_prepare' ? (
+                                    cn(
+                                        "scale-110 shadow-2xl",
+                                        // Color logic: Top/Left = Red, Bottom/Right = Blue
+                                        (highlight?.group === 'top_bottom' ? r === 0 : c === 0) 
+                                            ? "bg-rose-500/40 border-rose-400 text-rose-100 shadow-rose-500/30" 
+                                            : "bg-blue-500/40 border-blue-400 text-blue-100 shadow-blue-500/30"
+                                    )
+                                ) : "", 
+                                // Flip Phase
+                                currentStep?.type === 'mass_invert' ? "scale-100 rotate-y-180 bg-purple-500/50 border-purple-400 text-white shadow-purple-500/40 ring-1 ring-purple-300" : ""  
+                            )
+                        ),
+                        
+                        // Individual Invert (Fallback)
+                        isFormula && currentStep?.type === 'invert' && isFormulaHighlight && "bg-purple-500/40 border-purple-400 ring-1 ring-purple-400 animate-pulse text-white",
+
                         isDynHighlight && highlightType === 'active' && "ring-2 ring-amber-400 bg-amber-900/40 z-10 scale-105",
                         isDynHighlight && highlightType === 'forced' && "ring-2 ring-purple-400 bg-purple-900/60 z-10 scale-110 shadow-lg shadow-purple-500/40",
                         isDynHighlight && highlightType === 'backtrack' && "ring-2 ring-rose-500 bg-rose-500/30 z-10 animate-pulse"
