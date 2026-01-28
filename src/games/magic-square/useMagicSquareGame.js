@@ -56,7 +56,7 @@ export const useMagicSquareGame = ({ size, mainMode, algoMode, steps, speed, tri
   useEffect(() => {
     setIsPlaying(false);
     resetPractice();
-  }, [size, steps, mainMode, algoMode]);
+  }, [size, mainMode, algoMode]);
 
   const lastTriggerRun = useRef(0);
   useEffect(() => {
@@ -79,9 +79,29 @@ export const useMagicSquareGame = ({ size, mainMode, algoMode, steps, speed, tri
 
   const getMagicConstant = (n) => (n * (n * n + 1)) / 2;
 
+  // Real-time clock update when playing
+  useEffect(() => {
+    let interval;
+    if (isPlaying) {
+      interval = setInterval(() => {
+        if (startTimeRef.current > 0) {
+          const elapsed = Math.floor(performance.now() - startTimeRef.current);
+          setStats(prev => ({ ...prev, time: elapsed }));
+        }
+      }, 50); // Tick every 50ms for smooth display
+    }
+    return () => {
+        if (interval) clearInterval(interval);
+    };
+  }, [isPlaying]);
+
   useEffect(() => {
     if (!isPlaying) {
-      if (timerRef.current) clearInterval(timerRef.current);
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
       return;
     }
 
@@ -120,9 +140,7 @@ export const useMagicSquareGame = ({ size, mainMode, algoMode, steps, speed, tri
         let currentIndex = currentStepIndex;
         
         while (isPlaying && currentIndex < steps.length - 1) {
-          const now = performance.now();
-          const elapsed = Math.floor(now - startTimeRef.current);
-          setStats(prev => ({ ...prev, time: elapsed }));
+          // Time is now handled by the real-time useEffect above
 
           // Dynamic Delay based on Step Type
           let delay = playbackDelay;

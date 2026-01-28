@@ -233,15 +233,15 @@ export default function MagicSquareBoard({ speed }) {
     }
   };
 
-  // stepsData is no longer a single global; each card generates its own in the map or we pass the generator
-
-
-  // Note: Since individual cards call their own useMagicSquareGame which might need specific steps,
-  // we should ideally pass a function or let the card generate its own steps if they differ by algo.
-  // But currently MagicSquareCard receives 'steps' as a prop.
-  // Actually, 'formula' and 'swing' are the only ones using the 'steps' prop for simulation.
-  // Others use the internal solver.
-
+  // Memoize all simulation steps to prevent unnecessary resets when other state changes
+  const memoizedStepsData = useMemo(() => {
+    const data = {};
+    const allIds = ['dynamic', 'heuristic', 'metric', 'backtrack', 'brute', 'formula', 'swing'];
+    allIds.forEach(id => {
+      data[id] = generateMagicSquareSteps(selectedSize, id);
+    });
+    return data;
+  }, [selectedSize]);
 
   const handleRunAll = () => {
     resultsRef.current = {};
@@ -339,7 +339,7 @@ export default function MagicSquareBoard({ speed }) {
                     size={selectedSize}
                     mainMode={mainMode}
                     algoMode={item.algoId}
-                    steps={generateMagicSquareSteps(selectedSize, item.algoId)}
+                    steps={memoizedStepsData[item.algoId] || []}
                     speed={speed}
                     triggerRun={triggerRun}
                     triggerReset={triggerReset}
@@ -373,7 +373,7 @@ export default function MagicSquareBoard({ speed }) {
                              triggerRun={triggerRun}
                              triggerReset={triggerReset}
                              speed={speed}
-                             steps={generateMagicSquareSteps(selectedSize, algoId)}
+                             steps={memoizedStepsData[algoId] || []}
                              onComplete={(s) => handleAlgoComplete(algoId, s)}
                            />
                       ))}

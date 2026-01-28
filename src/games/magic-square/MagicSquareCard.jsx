@@ -61,6 +61,37 @@ export const MagicSquareCard = ({
   }, [isComplete, isSoundEnabled]);
 
   const progressPercent = useMemo(() => {
+    // Milestone-based progress for both Swing and Direct Formula
+    if (mainMode === 'simulation' && (algoMode === 'swing' || (algoMode === 'formula' && size % 2 === 0)) && steps.length > 0) {
+      const type = steps[currentStepIndex]?.type;
+      
+      // Completion is always 100%
+      if (isComplete || type === 'complete') return "100.0";
+      
+      // Swing Specific Milestones
+      if (algoMode === 'swing') {
+        if (type === 'swing_rotating') return "80.0";
+        if (type === 'highlight_targets') return "50.0";
+        return "0.0"; // 0 during fill
+      }
+      
+      // Doubly/Singly Even (Formula) Milestones
+      if (algoMode === 'formula') {
+        if (type === 'setup') return "0.0";
+        if (type === 'scan' || type === 'pop_prepare') return "50.0";
+        if (type === 'mass_invert') return "85.0";
+        return "90.0"; // Settle/other phases
+      }
+    }
+
+    // Default Linear Progress for Odd squares or others
+    if (mainMode === 'simulation' && steps.length > 0) {
+      const total = steps.length;
+      const current = isComplete ? total : currentStepIndex + 1;
+      return ((current / total) * 100).toFixed(1);
+    }
+
+    // Default: Count filled cells
     let filledCount = 0;
     displayBoard.forEach(row => {
       row.forEach(cell => {
@@ -68,7 +99,7 @@ export const MagicSquareCard = ({
       });
     });
     return ((filledCount / (size * size)) * 100).toFixed(1);
-  }, [displayBoard, size]);
+  }, [displayBoard, size, isComplete, currentStepIndex, steps.length, algoMode, mainMode]);
 
   const getCellSize = () => {
     if (size <= 3) return "w-16 h-16 text-2xl";
@@ -405,7 +436,7 @@ export const MagicSquareCard = ({
                   <Activity size={14} className="text-rose-400 mb-1" />
                   <span className="text-[10px] text-slate-400 uppercase">Steps</span>
                   <span className="text-sm font-mono text-slate-200">
-                    {algoMode === 'formula' ? (isComplete ? steps.length : currentStepIndex + 1) : (stats?.attempts || 0)}
+                    {(algoMode === 'formula' || algoMode === 'swing') ? (isComplete ? steps.length : currentStepIndex + 1) : (stats?.attempts || 0)}
                   </span>
                 </div>
                 <div className="flex flex-col items-center">
