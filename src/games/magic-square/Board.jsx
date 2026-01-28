@@ -1,199 +1,27 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { MagicSquareCard } from './MagicSquareCard';
 import { generateMagicSquareSteps } from './logic';
-import { BookOpen, GraduationCap, LayoutGrid, Zap, RotateCcw, Sliders, Play, Check, BrainCircuit, Square } from 'lucide-react';
+import { Info, BookOpen, RotateCcw, LayoutGrid, Zap, Sliders, Play, Check, BrainCircuit, Square, GraduationCap } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useMagicSquareGame } from './useMagicSquareGame';
 import { MagicMobileControlBar } from './MagicMobileControlBar';
 import { MagicScoreboard } from './MagicScoreboard';
 import { MagicAlgoTable } from './MagicAlgoTable';
-import { Info } from 'lucide-react';
+import { MagicControlCard } from './components/MagicControlCard';
+import { ScoreCard } from './components/ScoreCard';
 
 const ALL_SIZES = [3, 4, 5, 6, 7, 8, 9, 10];
 
-const MagicControlCard = ({ 
-    selectedSize, 
-    setSelectedSize,
-    selectedAlgos, 
-    toggleAlgo, 
-    toggleAllAlgos,
-    mainMode, 
-    setMainMode,
-    onRunAll,
-    onResetAll,
-    isRunningAny,
-    showAlgoTable,
-    setShowAlgoTable
-}) => {
-  const simulationAlgos = [
-    { id: 'formula', label: 'Formula', icon: BookOpen },
-    { id: 'swing', label: 'Swing', icon: RotateCcw },
-    { id: 'dynamic', label: 'CSP Solver', icon: BrainCircuit },
-    { id: 'heuristic', label: 'Smart BT', icon: LayoutGrid },
-    { id: 'metric', label: 'Metric BT', icon: Zap },
-    { id: 'backtrack', label: 'Recursive', icon: RotateCcw },
-    { id: 'brute', label: 'Brute Force', icon: Sliders },
-  ];
-
-  const allSelected = selectedAlgos.size === simulationAlgos.length;
-  const noneSelected = selectedAlgos.size === 0;
-
-  return (
-    <div className="bg-slate-800/60 backdrop-blur-xl border border-emerald-500/30 rounded-xl p-4 flex flex-col gap-3 shadow-2xl relative overflow-hidden group h-full">
-      <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-transparent pointer-events-none" />
-      
-      {/* Header */}
-      <div className="flex items-center gap-2 mb-1">
-        <Zap size={16} className="text-amber-400 fill-amber-400/20" />
-        <h3 className="text-xs font-bold text-white uppercase tracking-widest">Lab Control</h3>
-      </div>
-
-      {/* Main Mode Switcher */}
-      <div className="grid grid-cols-2 gap-1 p-1 bg-slate-900/50 rounded-lg border border-white/5">
-        {[
-            { id: 'simulation', label: 'SIMULATION', icon: Zap },
-            { id: 'practice', label: 'PRACTICE', icon: GraduationCap }
-        ].map(m => (
-            <button 
-                key={m.id}
-                onClick={() => setMainMode(m.id)}
-                className={cn(
-                    "flex items-center justify-center gap-1.5 py-2 rounded-md text-[9px] font-black tracking-widest transition-all",
-                    mainMode === m.id 
-                    ? "bg-emerald-400/20 border border-emerald-400/30 text-emerald-300 shadow-lg shadow-emerald-500/10" 
-                    : "bg-transparent text-slate-500 hover:text-slate-400 hover:bg-white/5"
-                )}
-            >
-                <m.icon size={11} /> {m.label}
-            </button>
-        ))}
-      </div>
-
-      {/* Primary Actions (Run / Reset) */}
-      <div className="flex gap-2">
-        <button 
-          onClick={onResetAll}
-          className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-slate-700/50 hover:bg-slate-700 text-slate-300 rounded-xl font-bold text-[10px] border border-slate-600/50 transition-all active:scale-95"
-        >
-          <RotateCcw size={12} /> RESET
-        </button>
-        {isRunningAny ? (
-          <button 
-            onClick={onResetAll}
-            className="flex-[1.5] flex items-center justify-center gap-2 py-2.5 bg-slate-700/50 hover:bg-slate-700/80 text-slate-300 rounded-xl font-bold text-[10px] border border-white/10 transition-all active:scale-95"
-          >
-            <Square size={12} fill="currentColor" /> HOLD
-          </button>
-        ) : (
-          <button 
-            onClick={onRunAll}
-            disabled={mainMode === 'practice'}
-            className={cn(
-                "flex-[1.5] flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-[10px] shadow-xl transition-all active:scale-95",
-                mainMode === 'practice' 
-                  ? "bg-slate-800 text-slate-600 cursor-not-allowed" 
-                  : "bg-emerald-400/90 hover:bg-emerald-400 text-white shadow-emerald-400/20 font-black tracking-widest"
-            )}
-          >
-            <Play size={12} fill="currentColor" /> RUN SELECTED
-          </button>
-        )}
-      </div>
-
-      {/* Algorithm Selection (Checkboxes) - only for simulation */}
-      {mainMode === 'simulation' && (
-        <div className="flex flex-col gap-2">
-          <button 
-             onClick={toggleAllAlgos}
-             className={cn(
-               "flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-slate-900/40 border transition-all hover:bg-emerald-500/10",
-               noneSelected ? "border-slate-700 text-slate-500" : "border-emerald-500/20 text-emerald-300"
-             )}
-          >
-             <div className={cn(
-                 "w-4 h-4 rounded flex items-center justify-center transition-all shrink-0",
-                 allSelected ? "bg-emerald-400" : 
-                 (noneSelected ? "border border-slate-700 bg-slate-800/50" : "border border-emerald-400/30 bg-emerald-400/10")
-             )}>
-                 {allSelected && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
-                 {!allSelected && !noneSelected && <div className="w-1.5 h-1.5 bg-emerald-400/80 rounded-sm" />}
-             </div>
-             <span className="text-[11px] font-black uppercase tracking-widest">
-                {allSelected ? "Unselect" : noneSelected ? "Select All" : "Reset Selection"} ({selectedAlgos.size}/{simulationAlgos.length})
-             </span>
-          </button>
-
-          <div className="grid grid-cols-2 gap-1.5">
-            {simulationAlgos.map(algo => (
-              <label 
-                key={algo.id}
-                className={cn(
-                  "flex items-center gap-2 px-2 py-1.5 rounded-lg border transition-all cursor-pointer group",
-                  selectedAlgos.has(algo.id) 
-                    ? "bg-emerald-600/10 border-emerald-500/30 text-white" 
-                    : "bg-slate-900/20 border-white/5 text-slate-500 hover:text-slate-400 hover:border-white/10"
-                )}
-              >
-                <input 
-                  type="checkbox" 
-                  className="hidden" 
-                  checked={selectedAlgos.has(algo.id)}
-                  onChange={() => toggleAlgo(algo.id)}
-                />
-                <div className={cn(
-                    "w-3 h-3 rounded flex items-center justify-center transition-all",
-                    selectedAlgos.has(algo.id) 
-                      ? "bg-emerald-400 shadow-[0_0_4px_rgba(52,211,153,0.3)]" 
-                      : "border border-slate-700 bg-slate-800/50 group-hover:border-slate-600"
-                )}>
-                    {selectedAlgos.has(algo.id) && <div className="w-1 h-1 bg-white rounded-full" />}
-                </div>
-                <algo.icon size={11} className={selectedAlgos.has(algo.id) ? "text-emerald-400" : "text-slate-600"} />
-                <span className="text-[10px] font-black uppercase tracking-tighter whitespace-nowrap">{algo.label}</span>
-              </label>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Unified Size Selection */}
-      <div className="mt-auto pt-3 border-t border-slate-700/50">
-        <div className="flex justify-between items-center mb-2 px-1">
-            <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Select Order (N x N)</span>
-            <button 
-                onClick={() => setShowAlgoTable(!showAlgoTable)}
-                className={cn(
-                    "flex items-center gap-1.5 px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-tighter transition-all border",
-                    showAlgoTable 
-                        ? "bg-slate-700 border-white/20 text-slate-300" 
-                        : "bg-emerald-500/30 border-emerald-400/50 text-emerald-300 hover:bg-emerald-500/50"
-                )}
-            >
-                <Info size={10} />
-                {showAlgoTable ? 'Hide Matrix' : 'Engine Matrix'}
-            </button>
-        </div>
-        <div className="grid grid-cols-4 gap-1.5">
-          {ALL_SIZES.map(size => (
-            <button 
-              key={size}
-              onClick={() => setSelectedSize(size)}
-              className={cn(
-                "py-2 rounded-lg font-bold text-xs transition-all border",
-                selectedSize === size 
-                  ? "bg-emerald-400/30 border-emerald-400/40 text-emerald-200 shadow-md shadow-emerald-500/10" 
-                  : "bg-slate-900/30 border-transparent text-slate-500 hover:text-slate-400"
-              )}
-            >
-              {size}x{size}
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-};
+const SIMULATION_ALGOS = [
+  { id: 'formula', label: 'Formula', icon: BookOpen },
+  { id: 'swing', label: 'Swing', icon: RotateCcw },
+  { id: 'dynamic', label: 'CSP Solver', icon: BrainCircuit },
+  { id: 'heuristic', label: 'Smart BT', icon: LayoutGrid },
+  { id: 'metric', label: 'Metric BT', icon: Zap },
+  { id: 'backtrack', label: 'Recursive', icon: RotateCcw },
+  { id: 'brute', label: 'Brute Force', icon: Sliders },
+];
 
 export default function MagicSquareBoard({ speed }) {
   const [selectedSize, setSelectedSize] = useState(8);
@@ -225,7 +53,7 @@ export default function MagicSquareBoard({ speed }) {
   };
 
   const toggleAllAlgos = () => {
-    const allIds = ['dynamic', 'heuristic', 'metric', 'backtrack', 'brute', 'formula', 'swing'];
+    const allIds = SIMULATION_ALGOS.map(a => a.id);
     if (selectedAlgos.size === allIds.length) {
         setSelectedAlgos(new Set());
     } else {
@@ -321,7 +149,6 @@ export default function MagicSquareBoard({ speed }) {
             item.type === 'control' ? (
                 <div key="control-wrapper" className="hidden lg:block">
                   <MagicControlCard 
-                      key="control-card"
                       selectedSize={selectedSize}
                       setSelectedSize={setSelectedSize}
                       selectedAlgos={selectedAlgos}
@@ -334,6 +161,8 @@ export default function MagicSquareBoard({ speed }) {
                       isRunningAny={runningAlgos.size > 0}
                       showAlgoTable={showAlgoTable}
                       setShowAlgoTable={setShowAlgoTable}
+                      simulationAlgos={SIMULATION_ALGOS}
+                      ALL_SIZES={ALL_SIZES}
                   />
                 </div>
             ) : (
@@ -437,83 +266,3 @@ export default function MagicSquareBoard({ speed }) {
   );
 }
 
-const ScoreCard = ({ algoId, size, triggerRun, triggerReset, speed, steps, onComplete }) => {
-    const [finalStats, setFinalStats] = useState({ attempts: 0, time: 0 });
-    const [isSoundEnabled, setIsSoundEnabled] = useState(true);
-    const [isDone, setIsDone] = useState(false);
-
-    const labels = {
-      dynamic: { name: 'Heuristic CSP', desc: 'Constraint satisfaction algorithm', color: 'text-emerald-400/80', bg: 'bg-emerald-400/60' },
-      heuristic: { name: 'Smart Backtrack', desc: 'Forced-assignment backtracking', color: 'text-teal-400/80', bg: 'bg-teal-400/60' },
-      metric: { name: 'Metric Backtrack', desc: 'Distance-based pruning', color: 'text-lime-400/80', bg: 'bg-lime-400/60' },
-      backtrack: { name: 'Recursive Backtrack', desc: 'Classic recursive search', color: 'text-rose-400', bg: 'bg-rose-500' },
-      brute: { name: 'Pure Brute Force', desc: 'Exhaustive permutation search', color: 'text-slate-400', bg: 'bg-slate-500' },
-      formula: { name: 'Direct Formula', desc: 'Static magic square construction', color: 'text-emerald-400', bg: 'bg-emerald-500' },
-      swing: { name: 'Formula Swing', desc: '4x4 Rotation algorithm', color: 'text-sky-400', bg: 'bg-sky-500' }
-    };
-
-    const l = labels[algoId] || { name: algoId, desc: '', color: 'text-white', bg: 'bg-white' };
-
-    const { stats: currentStats, isPlaying } = useMagicSquareGame({ 
-        size, 
-        mainMode: 'simulation', 
-        algoMode: algoId, 
-        steps: steps, 
-        speed, 
-        triggerRun, 
-        triggerReset,
-        onComplete: (s) => {
-            setFinalStats(s);
-            setIsDone(true);
-            if (onComplete) onComplete(s);
-        }
-    });
-
-    useEffect(() => {
-        if (triggerReset > 0) {
-            setFinalStats({ attempts: 0, time: 0 });
-            setIsDone(false);
-        }
-    }, [triggerReset]);
-
-    const displayStats = isDone ? finalStats : currentStats;
-
-    return (
-        <div className={cn(
-            "p-5 rounded-2xl border transition-all duration-500",
-            isPlaying ? "bg-slate-700/30 border-indigo-500/30 scale-105 shadow-lg shadow-indigo-500/10" : "bg-slate-900/40 border-white/5"
-        )}>
-            <div className="flex justify-between items-start mb-4">
-                <div>
-                    <h5 className={cn("text-xs font-black uppercase tracking-widest mb-1", l.color)}>{l.name}</h5>
-                    <p className="text-[9px] text-slate-500 font-bold">{l.desc}</p>
-                </div>
-                {isDone && <Check size={14} className="text-emerald-500" />}
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-                <div className="flex flex-col">
-                    <span className="text-[10px] text-slate-500 uppercase font-black tracking-tighter mb-1">Total Steps</span>
-                    <span className="text-xl font-mono text-white flex items-baseline gap-1">
-                        {displayStats.attempts.toLocaleString()}
-                        <span className="text-[10px] text-slate-500 font-bold tracking-normal">steps</span>
-                    </span>
-                </div>
-                <div className="flex flex-col">
-                    <span className="text-[10px] text-slate-500 uppercase font-black tracking-tighter mb-1">Elapsed Time</span>
-                    <span className="text-xl font-mono text-white flex items-baseline gap-1">
-                        {(displayStats.time / 1000).toFixed(3)}
-                        <span className="text-[10px] text-slate-500 font-bold tracking-normal">sec</span>
-                    </span>
-                </div>
-            </div>
-
-            <div className="mt-4 h-1 bg-slate-800 rounded-full overflow-hidden">
-                <div 
-                    style={{ width: isPlaying ? '100%' : (isDone ? '100%' : '0%') }}
-                    className={cn("h-full transition-all duration-1000 ease-out", l.bg, isPlaying ? "animate-pulse" : "")}
-                />
-            </div>
-        </div>
-    );
-}
