@@ -139,7 +139,7 @@ export const MagicSquareCard = ({
 
   return (
     <div className={cn(
-      "bg-slate-800/40 backdrop-blur-md border rounded-xl p-1.5 flex flex-col shadow-xl transition-all group overflow-hidden",
+      "bg-slate-800/40 backdrop-blur-md border rounded-xl p-1.5 flex flex-col shadow-xl transition-all group",
       isComplete ? "border-emerald-500/30 bg-emerald-500/5 shadow-[0_0_20px_rgba(16,185,129,0.05)]" : "border-slate-700/50"
     )}>
       {/* Header */}
@@ -207,22 +207,20 @@ export const MagicSquareCard = ({
             );
           })}
         </div>
-
-        
         {/* Column Sums */}
-        <div className={cn("flex items-center mt-1", getGapSize())}>
-            <div className="w-5 h-5 mr-1" /> {/* Spacer for Left Icon */}
-            {colSums.map((col, idx) => (
-                <div key={`col-sum-${idx}`} className={cn(
-                    getCellSize(), // Use same width as cells
-                    "flex items-center justify-center font-mono font-bold text-[9px] border-t-2 transition-all",
-                    col.isComplete ? "border-emerald-500/50 text-emerald-400" : "border-slate-700 text-slate-600",
-                    (isComplete || col.sum > 0) ? "opacity-100" : "opacity-0"
-                )}>
-                    {col.sum > 0 ? col.sum : ''}
-                </div>
-            ))}
-            <div className="w-5 h-5 ml-1" /> {/* Spacer for Right Sum */}
+        <div className={cn("flex", getGapSize(), "mt-1")}>
+          <div className="w-5 h-5 mr-1 opacity-0" /> {/* Placeholder for row sum */}
+          {colSums.map((col, idx) => (
+            <div key={`col-sum-${idx}`} className={cn(
+              getCellSize(), // Use same width as cells
+              "flex items-center justify-center font-mono font-bold text-[10px] rounded-md transition-all",
+              col.isComplete ? "text-sky-400 bg-sky-500/10 border border-sky-500/20" : "text-slate-500 bg-slate-700/20 border border-slate-700/30",
+              (isComplete || col.sum > 0) ? "opacity-100" : "opacity-0"
+            )}>
+              {col.sum > 0 ? col.sum : ''}
+            </div>
+          ))}
+          <div className="w-5 h-5 ml-1 opacity-0" /> {/* Placeholder for row sum */}
         </div>
       </div>
 
