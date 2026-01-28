@@ -28,7 +28,7 @@ export class MagicSquareSwing {
         const { r, c } = positions[i];
         const val = i + 1;
         board[r][c] = val;
-        addStep(board, val, { r, c }, `Fill ${val}`, "setup");
+        addStep(board, val, { r, c }, "ZigZag Fill", "setup");
       }
       
       const targets = [
@@ -36,15 +36,18 @@ export class MagicSquareSwing {
         {r: 0, c: 2}, {r: 1, c: 2}, {r: 2, c: 2}, {r: 3, c: 2}
       ];
 
-      // 3. Rotation Animation Logic
-      addStep(board, null, { targets }, "Rotating...", "swing_rotating");
+      // 3. Highlight Step (Select Swing Cells)
+      addStep(board, null, { targets }, "Select Swing Cells", "highlight_targets");
+
+      // 4. Rotation Animation Logic
+      addStep(board, null, { targets }, "Swing!", "swing_rotating");
       
-      // 4. Final state calculation
+      // 5. Final state calculation
       const finalBoard = JSON.parse(JSON.stringify(board));
       for (const { r, c } of targets) {
           finalBoard[n-1-r][n-1-c] = board[r][c];
       }
-      addStep(finalBoard, null, null, "Completed!", "complete");
+      addStep(finalBoard, null, null, "That's it", "complete");
       
       return steps;
     }

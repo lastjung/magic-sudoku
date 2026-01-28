@@ -232,23 +232,23 @@ export const MagicSquareCard = ({
                   let swingStyle = {};
                   const isSwingTarget = algoMode === 'swing' && size === 4 && (c === 1 || c === 2);
                   
-                  if (isSwingTarget && (currentStep?.type === 'swing_rotating' || isComplete)) {
+                  if (isSwingTarget && (currentStep?.type === 'highlight_targets' || currentStep?.type === 'swing_rotating' || isComplete)) {
                     const stride = 56;
                     const offsetX = (1.5 - c) * stride;
                     const offsetY = (1.5 - r) * stride;
                     swingStyle = {
-                      backgroundColor: 'rgba(245, 158, 11, 0.6)', // Vivid Orange/Amber
+                      backgroundColor: 'rgba(245, 158, 11, 0.6)',
                       borderColor: 'rgb(245, 158, 11)',
                       boxShadow: '0 0 40px rgba(245, 158, 11, 0.4)',
                       color: '#fff',
                       zIndex: 40,
                       ...(currentStep?.type === 'swing_rotating' ? {
-                        transformOrigin: `${50 + (offsetX / (stride / 1.1) * 100)}% ${50 + (offsetY / (stride / 1.1) * 100)}%`,
+                        transformOrigin: `${50 + (offsetX / stride * 100)}% ${50 + (offsetY / stride * 100)}%`,
                         transform: 'rotate(180deg)',
                         transition: 'transform 3.6s cubic-bezier(0.4, 0, 0.2, 1)',
                       } : {
                         transform: 'none',
-                        transition: 'none'
+                        transition: isComplete ? 'none' : 'background-color 1s ease-in-out, border-color 1s ease-in-out, box-shadow 1s ease-in-out'
                       })
                     };
                   }
@@ -395,7 +395,7 @@ export const MagicSquareCard = ({
         <div className="flex flex-col mt-1">
             <div className="h-10 flex items-center justify-center mb-1 px-4 bg-slate-900/60 rounded-lg border border-amber-500/20 shadow-inner">
                 <span className="text-[12px] font-black uppercase tracking-wider text-center text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.2)]">
-                    {algoMode !== 'formula' ? (dynamicDesc || "Ready...") : (currentStep?.desc || (isComplete ? 'Simulation Finished' : 'Solving...'))}
+                    {(algoMode !== 'formula' && algoMode !== 'swing') ? (dynamicDesc || "Ready...") : (currentStep?.desc || (isComplete ? 'Simulation Finished' : 'Solving...'))}
                 </span>
             </div>
 
