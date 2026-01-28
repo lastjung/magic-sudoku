@@ -161,7 +161,14 @@ export const MagicSquareCard = ({
                  <RefreshCw size={13} />
                </button>
                {!isPlaying ? (
-                  <button onClick={() => setIsPlaying(true)} className="p-1.5 rounded-lg bg-emerald-400/10 text-emerald-400/60 hover:bg-emerald-400/20 border border-emerald-500/10 transition-all active:scale-95">
+                  <button onClick={() => {
+                     if (isComplete) {
+                        resetPractice();
+                        setTimeout(() => setIsPlaying(true), 10);
+                     } else {
+                        setIsPlaying(true);
+                     }
+                   }} className="p-1.5 rounded-lg bg-emerald-400/10 text-emerald-400/60 hover:bg-emerald-400/20 border border-emerald-500/10 transition-all active:scale-95">
                     <Play size={14} fill="currentColor" />
                   </button>
                ) : (
