@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { audioEngine } from '../../utils/audio';
+import { solveDynamicStep } from './logic/dynamic';
+import { solveHeuristicStep } from './logic/heuristic';
+import { solveBacktrackStep } from './logic/backtrack';
 
 export const useMagicSquareGame = ({ size, mainMode, algoMode, steps, speed, triggerRun = 0, triggerReset = 0, onComplete }) => {
   const mode = mainMode === 'simulation' 
@@ -27,9 +30,7 @@ export const useMagicSquareGame = ({ size, mainMode, algoMode, steps, speed, tri
   const resetPractice = useCallback(() => {
     let initialBoard = Array.from({ length: size }, () => Array(size).fill(null));
     
-    // For Practice mode or after initial load, show the ZigZag pattern immediately if requested
     if (algoMode === 'swing' && (size === 4 || size === 8)) {
-        // Only pre-fill if NOT in simulation mode simulation, or if we want users to see it full and then clear on Play
         for (let r = 0; r < size; r++) {
             for (let c = 0; c < size; c++) {
               if (r % 2 === 0) initialBoard[r][c] = (r * size) + c + 1;
@@ -73,9 +74,6 @@ export const useMagicSquareGame = ({ size, mainMode, algoMode, steps, speed, tri
     }
   }, [triggerReset, resetPractice]);
 
-  const getMagicConstant = (n) => (n * (n * n + 1)) / 2;
-
-  // Real-time clock update (throttled for performance)
   useEffect(() => {
     let interval;
     if (isPlaying) {
@@ -136,11 +134,8 @@ export const useMagicSquareGame = ({ size, mainMode, algoMode, steps, speed, tri
         
         while (currentIndex < steps.length - 1 && isPlaying) {
           const step = steps[currentIndex];
-          
           let delay = playbackDelay;
-          // Faster fill for 8x8 setup steps
           if (size === 8 && step.type === 'setup') delay = Math.max(30, playbackDelay / 4);
-          
           if (step.type === 'highlight_targets') delay = 1000;
           if (step.type === 'swing_rotating') delay = 3600;
           
@@ -154,13 +149,12 @@ export const useMagicSquareGame = ({ size, mainMode, algoMode, steps, speed, tri
           setCurrentStepIndex(currentIndex);
           setStats(prev => ({ ...prev, attempts: currentIndex }));
           
-          // Sound effects using proper audioEngine API
           if (isSoundEnabled) {
               const currentStepData = steps[currentIndex];
               if (currentStepData?.val) {
                   audioEngine.playNote(currentStepData.val);
               } else if (currentStepData?.type === 'highlight_targets' || currentStepData?.type === 'swing_rotating') {
-                  audioEngine.playNote(size * size); // High accent note
+                  audioEngine.playNote(size * size);
               } else if (currentStepData?.type === 'complete') {
                   audioEngine.playSuccess();
               }
@@ -176,7 +170,6 @@ export const useMagicSquareGame = ({ size, mainMode, algoMode, steps, speed, tri
           }
         }
       };
-      
       runLearnLoop();
     } else {
         const solveStep = () => {
@@ -184,13 +177,10 @@ export const useMagicSquareGame = ({ size, mainMode, algoMode, steps, speed, tri
 
             let result;
             if (algoMode === 'heuristic') {
-                const { solveHeuristicStep } = require('./logic/heuristic');
                 result = solveHeuristicStep(solverRef.current, size);
             } else if (mode === 'brute' || algoMode === 'backtrack' || algoMode === 'metric') {
-                const { solveBacktrackStep } = require('./logic/backtrack');
                 result = solveBacktrackStep(solverRef.current, size, algoMode);
             } else if (mode === 'dynamic') {
-                const { solveDynamicStep } = require('./logic/dynamic');
                 result = solveDynamicStep(solverRef.current, size);
             }
 
@@ -215,14 +205,12 @@ export const useMagicSquareGame = ({ size, mainMode, algoMode, steps, speed, tri
                 }
             }
         };
-
         timerRef.current = setTimeout(solveStep, playbackDelay);
     }
 
     return () => {
       if (timerRef.current) {
         clearTimeout(timerRef.current);
-        clearInterval(timerRef.current);
       }
     };
   }, [isPlaying, currentStepIndex, steps, playbackDelay, mode, algoMode, size, onComplete, isSoundEnabled]);
