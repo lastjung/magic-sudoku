@@ -1,4 +1,13 @@
 export function solveHeuristicStep(solver, size) {
+    if (!solver.flatBoard) {
+        solver.flatBoard = Array(size * size).fill(null);
+        solver.used = Array(size * size + 1).fill(false);
+        solver.stack = [];
+        solver.filledCount = 0;
+        solver.firstNumberPositions = [];
+        solver.firstPosIdx = -1;
+    }
+
     const { flatBoard, used, stack } = solver;
     const magicConst = (size * (size * size + 1)) / 2;
 
@@ -6,12 +15,11 @@ export function solveHeuristicStep(solver, size) {
         return { board: reconstructBoard(flatBoard, size), isComplete: true, desc: "Solution found!" };
     }
 
+    // Initialize/Restart with '1' at different positions
     if (solver.firstNumberPositions.length === 0) {
         if (size === 3) solver.firstNumberPositions = [0, 1, 4];
         else if (size === 4) solver.firstNumberPositions = [0, 1, 5];
-        else {
-            for (let i = 0; i < size * size; i++) solver.firstNumberPositions.push(i);
-        }
+        else { for (let i = 0; i < size * size; i++) solver.firstNumberPositions.push(i); }
         solver.firstPosIdx = 0;
     }
 
@@ -20,34 +28,33 @@ export function solveHeuristicStep(solver, size) {
         flatBoard[pos1] = 1;
         used[1] = true;
         solver.filledCount = 1;
-        return {
-            board: reconstructBoard(flatBoard, size),
-            val: 1,
-            highlight: { r: Math.floor(pos1/size), c: pos1%size, type: 'active' },
-            desc: `Optimizing start: Placing 1 at cell ${pos1}.`
+        return { 
+            board: reconstructBoard(flatBoard, size), 
+            val: 1, highlight: { r: Math.floor(pos1/size), c: pos1%size, type: 'active' },
+            desc: `Starting: Placing 1 at cell ${pos1}.`
         };
     }
 
     let currentFrame = stack[solver.filledCount];
     if (!currentFrame) {
         const emptyIndices = flatBoard.map((v, i) => v === null ? i : -1).filter(idx => idx !== -1);
-        if (emptyIndices.length === 0) return handleBacktrack(solver, size);
+        if (emptyIndices.length === 0) return handleHeuristicBacktrack(solver, size);
 
+        // Simple Next-Empty Heuristic
         const cellIdx = emptyIndices[0]; 
         let forcedVal = null;
-        
         const r_idx = Math.floor(cellIdx/size), c_idx = cellIdx % size;
-        const lines = [
+        const lines_c = [
             Array.from({length: size}, (_, i) => r_idx * size + i),
             Array.from({length: size}, (_, i) => i * size + c_idx)
         ];
-        if (r_idx === c_idx) lines.push(Array.from({length: size}, (_, i) => i * size + i));
-        if (r_idx + c_idx === size - 1) lines.push(Array.from({length: size}, (_, i) => i * size + (size - 1 - i)));
+        if (r_idx === c_idx) lines_c.push(Array.from({length: size}, (_, i) => i * size + i));
+        if (r_idx + c_idx === size - 1) lines_c.push(Array.from({length: size}, (_, i) => i * size + (size - 1 - i)));
 
-        for (let line of lines) {
+        for (let line of lines_c) {
             const filled = line.filter(i => flatBoard[i] !== null);
             if (filled.length === size - 1) {
-                forcedVal = magicConst - filled.reduce((a, b) => a + flatBoard[b], 0);
+                forcedVal = magicConst - filled.reduce((a,b) => a + flatBoard[b], 0);
                 break;
             }
         }
@@ -60,23 +67,62 @@ export function solveHeuristicStep(solver, size) {
         if (currentFrame.triedNum === 0) {
             numToTry = currentFrame.forcedVal;
             currentFrame.triedNum = 999;
-            const effect = tryPlaceEffect(numToTry, currentFrame, solver, size, true);
-            if (effect) return effect;
+            const res = tryPlace(numToTry, currentFrame, solver, size, true);
+            if (res) return res;
         }
     } else {
         numToTry = (currentFrame.triedNum === 0 ? 2 : currentFrame.triedNum + 1);
         while (numToTry <= size * size && used[numToTry]) numToTry++;
         currentFrame.triedNum = numToTry;
         if (numToTry <= size * size) {
-            const effect = tryPlaceEffect(numToTry, currentFrame, solver, size, false);
-            if (effect) return effect;
+            const res = tryPlace(numToTry, currentFrame, solver, size, false);
+            if (res) return res;
         }
     }
 
-    return handleBacktrack(solver, size);
+    return handleHeuristicBacktrack(solver, size);
 }
 
-function handleBacktrack(solver, size) {
+function tryPlace(numToTry, frame, solver, size, isForced) {
+    if (numToTry < 1 || numToTry > size * size || solver.used[numToTry]) return null;
+    const { flatBoard, used } = solver;
+    const magicConst = (size * (size * size + 1)) / 2;
+    const r = Math.floor(frame.cellIdx/size), c = frame.cellIdx % size;
+
+    flatBoard[frame.cellIdx] = numToTry;
+    used[numToTry] = true;
+
+    const lines = [
+        Array.from({length: size}, (_, i) => r * size + i),
+        Array.from({length: size}, (_, i) => i * size + c)
+    ];
+    if (r === c) lines.push(Array.from({length: size}, (_, i) => i * size + i));
+    if (r + c === size - 1) lines.push(Array.from({length: size}, (_, i) => i * size + (size - 1 - i)));
+
+    for (let line of lines) {
+        const vals = line.map(i => flatBoard[i]).filter(v => v !== null);
+        const s = vals.reduce((a,b) => a+b, 0);
+        if (s > magicConst || (vals.length === size && s !== magicConst)) {
+            flatBoard[frame.cellIdx] = null;
+            used[numToTry] = false;
+            return {
+                board: reconstructBoard(flatBoard, size),
+                highlight: { r, c, type: 'backtrack' },
+                desc: `Conflict! ${numToTry} breaks magicsum.`
+            };
+        }
+    }
+
+    solver.filledCount++;
+    return {
+        board: reconstructBoard(flatBoard, size),
+        val: numToTry,
+        highlight: { r, c, type: isForced ? 'forced' : 'active' },
+        desc: isForced ? `Forced: ${numToTry}` : `Placing ${numToTry}...`
+    };
+}
+
+function handleHeuristicBacktrack(solver, size) {
     const { flatBoard, used, stack } = solver;
     stack[solver.filledCount] = null;
     solver.filledCount--;
@@ -88,63 +134,18 @@ function handleBacktrack(solver, size) {
         return {
             board: reconstructBoard(flatBoard, size),
             highlight: { r: Math.floor(prevFrame.cellIdx/size), c: prevFrame.cellIdx%size, type: 'backtrack' },
-            desc: `🔙 Backtracking: ${prevVal} didn't work. Returning...`
+            desc: `Backtracking from ${prevVal}`
         };
     } else {
         const prev1 = solver.firstNumberPositions[solver.firstPosIdx];
-        flatBoard[prev1] = null;
-        used[1] = false;
+        flatBoard[prev1] = null; used[1] = false;
         solver.firstPosIdx++;
         if (solver.firstPosIdx >= solver.firstNumberPositions.length) {
-            return { board: reconstructBoard(flatBoard, size), isComplete: true, desc: "Search exhausted." };
+            return { board: reconstructBoard(flatBoard, size), isComplete: true, desc: "No solution." };
         }
         solver.filledCount = 0;
-        return { board: reconstructBoard(flatBoard, size), desc: "Restarting from new position...", highlight: null };
+        return { board: reconstructBoard(flatBoard, size), desc: "Restarting..." };
     }
-}
-
-function tryPlaceEffect(numToTry, currentFrame, solver, size, isForced) {
-    const { flatBoard, used } = solver;
-    const magicConst = (size * (size * size + 1)) / 2;
-    const r = Math.floor(currentFrame.cellIdx/size), c = currentFrame.cellIdx % size;
-
-    if (numToTry >= 1 && numToTry <= size * size && !used[numToTry]) {
-        flatBoard[currentFrame.cellIdx] = numToTry;
-        used[numToTry] = true;
-
-        let isValid = true;
-        const lines_v = [
-            Array.from({length: size}, (_, i) => r * size + i),
-            Array.from({length: size}, (_, i) => i * size + c)
-        ];
-        if (r === c) lines_v.push(Array.from({length: size}, (_, i) => i * size + i));
-        if (r + c === size - 1) lines_v.push(Array.from({length: size}, (_, i) => i * size + (size - 1 - i)));
-
-        for (let line of lines_v) {
-            const vals = line.map(i => flatBoard[i]).filter(v => v !== null);
-            const s = vals.reduce((a, b) => a + b, 0);
-            if (s > magicConst || (vals.length === size && s !== magicConst)) { isValid = false; break; }
-        }
-
-        if (isValid) {
-            solver.filledCount++;
-            return {
-                board: reconstructBoard(flatBoard, size),
-                val: numToTry,
-                highlight: { r, c, type: isForced ? 'forced' : 'active' },
-                desc: isForced ? `Logical constraint: This cell must be ${numToTry}.` : `Trying ${numToTry} at cell (${r}, ${c})...`
-            };
-        } else {
-            flatBoard[currentFrame.cellIdx] = null;
-            used[numToTry] = false;
-            return {
-                board: reconstructBoard(flatBoard, size),
-                highlight: { r, c, type: 'backtrack' },
-                desc: `❌ Conflict! ${numToTry} violates rules.`
-            };
-        }
-    }
-    return null;
 }
 
 function reconstructBoard(flatBoard, size) {

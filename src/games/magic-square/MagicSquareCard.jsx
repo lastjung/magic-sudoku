@@ -62,44 +62,45 @@ export const MagicSquareCard = ({
   }, [isComplete, isSoundEnabled]);
 
   const progressPercent = useMemo(() => {
-    // Milestone-based progress for both Swing and Direct Formula
+    // 1. Force 100% if completed
+    if (isComplete) return "100.0";
+
+    // 2. Linear Progress for Formula/Swing Mode (Milestone Based)
     if (mainMode === 'simulation' && (algoMode === 'swing' || (algoMode === 'formula' && size % 2 === 0)) && steps.length > 0) {
       const type = steps[currentStepIndex]?.type;
+      if (type === 'complete') return "100.0";
       
-      // Completion is always 100%
-      if (isComplete || type === 'complete') return "100.0";
-      
-      // Swing Specific Milestones
       if (algoMode === 'swing') {
         if (type === 'swing_rotating') return "80.0";
         if (type === 'highlight_targets') return "50.0";
-        return "0.0"; // 0 during fill
+        return "0.0";
       }
       
-      // Doubly/Singly Even (Formula) Milestones
       if (algoMode === 'formula') {
         if (type === 'setup') return "0.0";
         if (type === 'scan' || type === 'pop_prepare') return "50.0";
         if (type === 'mass_invert') return "85.0";
-        return "90.0"; // Settle/other phases
+        return "90.0";
       }
     }
 
-    // Default Linear Progress for Odd squares or others
+    // 3. Default Linear Progress for Simulation Steps
     if (mainMode === 'simulation' && steps.length > 0) {
-      const total = steps.length;
-      const current = isComplete ? total : currentStepIndex + 1;
-      return ((current / total) * 100).toFixed(1);
+      const current = currentStepIndex + 1;
+      return ((current / steps.length) * 100).toFixed(1);
     }
 
-    // Default: Count filled cells
+    // 4. Fallback: Linear cell counting for Solver/Practice modes
     let filledCount = 0;
     displayBoard.forEach(row => {
       row.forEach(cell => {
-        if (cell !== null && cell > 0) filledCount++;
+        if (cell !== null && cell > 0 && cell <= size * size) filledCount++;
       });
     });
-    return ((filledCount / (size * size)) * 100).toFixed(1);
+    
+    // Safety: ensure it doesn't exceed 100 unless actually complete
+    const percent = (filledCount / (size * size)) * 100;
+    return (percent >= 100 && !isComplete) ? "99.9" : percent.toFixed(1);
   }, [displayBoard, size, isComplete, currentStepIndex, steps.length, algoMode, mainMode]);
 
   const getCellSize = () => {
