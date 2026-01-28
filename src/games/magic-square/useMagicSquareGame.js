@@ -98,7 +98,7 @@ export const useMagicSquareGame = ({ size, mainMode, algoMode, steps, speed, tri
       return;
     }
 
-    if (!solverRef.current || stats.attempts === 0) {
+    if (!solverRef.current) {
         startTimeRef.current = performance.now();
         if (algoMode === 'heuristic') {
             solverRef.current = { flatBoard: Array(size * size).fill(null), used: Array(size * size + 1).fill(false), stack: [], filledCount: 0, firstNumberPositions: [], firstPosIdx: -1 };
@@ -111,7 +111,7 @@ export const useMagicSquareGame = ({ size, mainMode, algoMode, steps, speed, tri
         }
     }
 
-    if (mode === 'learn' && isPlaying) {
+    if (mode === 'learn') {
       const runLearnLoop = async () => {
         if (startTimeRef.current === 0) startTimeRef.current = performance.now();
         let currentIndex = currentStepIndex;
@@ -220,6 +220,6 @@ export const useMagicSquareGame = ({ size, mainMode, algoMode, steps, speed, tri
     feedback, setFeedback, isSoundEnabled, setIsSoundEnabled,
     stats, currentStepIndex, isPlaying, setIsPlaying,
     isComplete, resetPractice, handlePracticeClick,
-    dynamicDesc, dynamicHighlight
+    dynamicDesc, dynamicHighlight, setCurrentStepIndex // 반환값 추가
   };
 };
