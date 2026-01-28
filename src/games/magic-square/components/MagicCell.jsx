@@ -17,7 +17,11 @@ export const MagicCell = ({
   const isFormula = algoMode === 'formula' || algoMode === 'swing';
 
   let cellStyle = {};
-  if (v && algoMode === 'formula') {
+  // Check if this cell is involved in a swap operation
+  const isSwapTarget = (currentStep?.type === 'swap_highlight' || currentStep?.type === 'swap') && 
+                       ( (highlight?.r === r && highlight?.c === c) || (highlight?.targets?.[0]?.r === r && highlight?.targets?.[0]?.c === c) );
+
+  if (v && algoMode === 'formula' && !isSwapTarget) {
     const bg = getFormulaColor(v, r, c, isComplete);
     cellStyle = {
       backgroundColor: bg,
