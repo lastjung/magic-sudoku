@@ -32,6 +32,11 @@ export class MagicSquareOdd {
       }
     }
 
+    if (steps.length > 0) {
+      steps[steps.length - 1].type = 'complete';
+      steps[steps.length - 1].desc = 'Magic Square Complete!';
+    }
+
     return steps;
   }
 }

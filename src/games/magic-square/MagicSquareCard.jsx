@@ -72,12 +72,16 @@ export const MagicSquareCard = ({
 
   const getCellSize = () => {
     if (size <= 3) return "w-16 h-16 text-2xl";
-    if (size <= 5) return "w-12 h-12 text-lg";
+    if (size <= 4) return "w-14 h-14 text-xl";
+    if (size <= 5) return "w-12 h-12 text-lg font-black";
+    if (size <= 7) return "w-11 h-11 text-base font-black";
+    if (size <= 9) return "w-[38px] h-[38px] text-xs font-black"; // Slightly reduced for breathing room
     return "w-[30px] h-[30px] text-[10px]";
   };
 
   const getGapSize = () => {
     if (size <= 5) return "gap-2";
+    if (size <= 7) return "gap-1.5";
     if (size <= 9) return "gap-1";
     return "gap-0.5";
   };
@@ -172,7 +176,7 @@ export const MagicSquareCard = ({
       {mainMode === 'simulation' && (
           <div className={cn(
             "flex justify-between px-4 py-2.5 border-b border-slate-700/30 bg-slate-900/40",
-            algoMode === 'formula' ? "invisible h-[34px]" : "h-auto"
+            (algoMode === 'formula' || algoMode === 'swing') ? "invisible h-[34px]" : "h-auto"
           )}>
               <div className="flex items-center gap-1">
                   <div className="w-1.5 h-1.5 rounded-full bg-amber-400 shadow-[0_0_5px_rgba(251,191,36,0.5)]" />
@@ -194,7 +198,10 @@ export const MagicSquareCard = ({
       )}
 
       {/* Board */}
-      <div className="flex flex-col items-center justify-start relative px-1 py-1">
+      <div className={cn(
+        "flex flex-col items-center justify-center relative px-2 flex-1 transition-all duration-500",
+        size > 7 ? "py-6" : "py-3"
+      )}>
         <div className="flex flex-col gap-1">
           {displayBoard.map((row, r) => {
             const rowSum = row.reduce((a, b) => a + (b || 0), 0);
@@ -222,9 +229,33 @@ export const MagicSquareCard = ({
                     };
                   }
 
+                  let swingStyle = {};
+                  const isSwingTarget = algoMode === 'swing' && size === 4 && (c === 1 || c === 2);
+                  
+                  if (isSwingTarget && (currentStep?.type === 'swing_rotating' || isComplete)) {
+                    const stride = 56;
+                    const offsetX = (1.5 - c) * stride;
+                    const offsetY = (1.5 - r) * stride;
+                    swingStyle = {
+                      backgroundColor: 'rgba(245, 158, 11, 0.6)', // Vivid Orange/Amber
+                      borderColor: 'rgb(245, 158, 11)',
+                      boxShadow: '0 0 40px rgba(245, 158, 11, 0.4)',
+                      color: '#fff',
+                      zIndex: 40,
+                      ...(currentStep?.type === 'swing_rotating' ? {
+                        transformOrigin: `${50 + (offsetX / (stride / 1.1) * 100)}% ${50 + (offsetY / (stride / 1.1) * 100)}%`,
+                        transform: 'rotate(180deg)',
+                        transition: 'transform 3.6s cubic-bezier(0.4, 0, 0.2, 1)',
+                      } : {
+                        transform: 'none',
+                        transition: 'none'
+                      })
+                    };
+                  }
+
                   let successColor = "";
                   let successBorder = "";
-                  if (isComplete && !isFormula) {
+                  if (isComplete && algoMode !== 'formula') {
                     const isCorner = (r===0 || r===size-1) && (c===0 || c===size-1);
                     const isCenter = r === Math.floor(size/2) && c === Math.floor(size/2);
                     if (isCorner || isCenter) {
@@ -243,7 +274,7 @@ export const MagicSquareCard = ({
                     <div
                       key={`${r}-${c}`}
                       onClick={() => mainMode === 'practice' && onCellClick(r, c)}
-                      style={cellStyle}
+                      style={{ ...cellStyle, ...swingStyle }}
                       className={cn(
                         "flex items-center justify-center rounded-md font-black transition-all relative overflow-hidden",
                         cellClasses, 
@@ -301,6 +332,10 @@ export const MagicSquareCard = ({
                              highlight?.targets?.some(t => t.r === r && t.c === c)
                                ? "ring-2 ring-sky-400/50 shadow-[0_0_20px_rgba(56,189,248,0.3)] bg-sky-900/60 text-sky-100 z-10"
                                : "opacity-30 grayscale-[0.8]"
+                        ),
+                        algoMode === 'swing' && currentStep?.type === 'highlight_targets' &&
+                        highlight?.targets?.some(t => t.r === r && t.c === c) && (
+                            "bg-blue-600 text-white z-10"
                         ),
                         // -----------------------------------
                         

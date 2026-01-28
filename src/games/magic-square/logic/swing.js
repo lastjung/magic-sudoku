@@ -1,6 +1,6 @@
 export class MagicSquareSwing {
     static generateSteps(n) {
-      if (n !== 4) return []; // Formula Swing is specific to 4x4
+      if (n !== 4) return [];
       
       const board = Array.from({ length: n }, () => Array(n).fill(null));
       const steps = [];
@@ -15,45 +15,37 @@ export class MagicSquareSwing {
         });
       };
       
-      // Step 0: Empty Board (Initial)
-      addStep(board, null, null, "Ready for Swing Operation", "idle");
+      // 1. Defined ZigZag (Snake) positions in a simple list
+      const positions = [
+        {r:0, c:0}, {r:0, c:1}, {r:0, c:2}, {r:0, c:3}, // Row 0: Left to Right
+        {r:1, c:3}, {r:1, c:2}, {r:1, c:1}, {r:1, c:0}, // Row 1: Right to Left
+        {r:2, c:0}, {r:2, c:1}, {r:2, c:2}, {r:2, c:3}, // Row 2: Left to Right
+        {r:3, c:3}, {r:3, c:2}, {r:3, c:1}, {r:3, c:0}  // Row 3: Right to Left
+      ];
 
-      // Step 1: Instant Fill (ZigZag Pattern 1-16)
-      for (let r = 0; r < n; r++) {
-        for (let c = 0; c < n; c++) {
-           if (r % 2 === 0) {
-             board[r][c] = (r * n) + c + 1;
-           } else {
-             board[r][c] = (r * n) + (n - 1 - c) + 1;
-           }
-        }
+      // 2. Sequentially fill the board based on the list
+      for (let i = 0; i < positions.length; i++) {
+        const { r, c } = positions[i];
+        const val = i + 1;
+        board[r][c] = val;
+        addStep(board, val, { r, c }, `Fill ${val}`, "setup");
       }
-      addStep(board, null, null, "ZigZag Numbers Loaded (1-16)", "setup_complete");
       
-      // Step 2: Identify Swing Targets (Non-Diagonal Cells)
-      const targets = [];
-      for(let r=0; r<n; r++) {
-        for(let c=0; c<n; c++) {
-          if (!((r % 4 === c % 4) || (r % 4 + c % 4 === 3))) {
-            targets.push({r, c});
-          }
-        }
-      }
-      addStep(board, null, { targets }, "Targeting Non-Diagonals for Swing...", "scan_swing");
-      
-      // Step 3: Swing Animation (Pop and Prepare)
-      addStep(board, null, { targets }, "Initiating Formula Swing...", "swing_prepare");
-      
-      // Step 4: Perform the Swing (Inversion)
-      for (let i = 0; i < targets.length; i++) {
-          const { r, c } = targets[i];
-          board[r][c] = (n * n + 1) - board[r][c];
-      }
-      addStep(board, null, { targets }, "Swing Completed! Balance Restored.", "swing_done");
+      const targets = [
+        {r: 0, c: 1}, {r: 1, c: 1}, {r: 2, c: 1}, {r: 3, c: 1},
+        {r: 0, c: 2}, {r: 1, c: 2}, {r: 2, c: 2}, {r: 3, c: 2}
+      ];
 
-      // Final Settle
-      addStep(board, null, null, "4x4 Magic Square Balanced via Formula Swing", "complete");
+      // 3. Rotation Animation Logic
+      addStep(board, null, { targets }, "Rotating...", "swing_rotating");
+      
+      // 4. Final state calculation
+      const finalBoard = JSON.parse(JSON.stringify(board));
+      for (const { r, c } of targets) {
+          finalBoard[n-1-r][n-1-c] = board[r][c];
+      }
+      addStep(finalBoard, null, null, "Completed!", "complete");
       
       return steps;
     }
-  }
+}

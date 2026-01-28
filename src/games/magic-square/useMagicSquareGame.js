@@ -14,7 +14,8 @@ export const useMagicSquareGame = ({ size, mainMode, algoMode, steps, speed, tri
   const [isSoundEnabled, setIsSoundEnabled] = useState(audioEngine.enabled);
   
   const timerRef = useRef(null);
-  const playbackDelay = Math.max(50, 1050 - speed);
+  const baseDelay = Math.max(50, 1050 - speed);
+  const playbackDelay = baseDelay;
 
   const [stats, setStats] = useState({ attempts: 0, time: 0 });
   const [dynamicDesc, setDynamicDesc] = useState("");
@@ -114,26 +115,45 @@ export const useMagicSquareGame = ({ size, mainMode, algoMode, steps, speed, tri
         }
     }
 
-    if (mode === 'learn') {
-      timerRef.current = setInterval(() => {
-        const now = performance.now();
-        const elapsed = Math.floor(now - startTimeRef.current);
-        setStats(prev => ({ ...prev, time: elapsed }));
+    if (mode === 'learn' && isPlaying) {
+      const runLearnLoop = async () => {
+        let currentIndex = currentStepIndex;
+        
+        while (isPlaying && currentIndex < steps.length - 1) {
+          const now = performance.now();
+          const elapsed = Math.floor(now - startTimeRef.current);
+          setStats(prev => ({ ...prev, time: elapsed }));
 
-        setCurrentStepIndex(prev => {
-          if (prev < steps.length - 1) {
-            const nextVal = prev + 1;
-            const nextStep = steps[nextVal];
-            if (nextStep?.val && isSoundEnabled) audioEngine.playNote(nextStep.val);
-            if (nextStep?.board) setPracticeBoard(nextStep.board);
-            setStats(s => ({ ...s, attempts: nextVal }));
-            return nextVal;
-          }
+          // Dynamic Delay based on Step Type
+          let delay = playbackDelay;
+          if (steps[currentIndex]?.type === 'swing_rotating') delay = 4000;
+          if (steps[currentIndex]?.type === 'highlight_targets') delay = 1000;
+          
+          await new Promise(resolve => {
+            timerRef.current = setTimeout(resolve, delay);
+          });
+
+          if (!isPlaying) break;
+
+          currentIndex++;
+          const nextStep = steps[currentIndex];
+          setCurrentStepIndex(currentIndex);
+          
+          if (nextStep?.val && isSoundEnabled) audioEngine.playNote(nextStep.val);
+          if (nextStep?.board) setPracticeBoard(nextStep.board);
+          setStats(s => ({ ...s, attempts: currentIndex }));
+        }
+
+        if (currentIndex >= steps.length - 1) {
           setIsPlaying(false);
-          if (onComplete) onComplete({ time: elapsed, attempts: steps.length });
-          return prev;
-        });
-      }, playbackDelay);
+          setTargetNum(size * size + 1); // Mark as complete to keep the board showing
+          const totalTime = Math.floor(performance.now() - startTimeRef.current);
+          if (onComplete) onComplete({ time: totalTime, attempts: steps.length });
+        }
+      };
+
+      runLearnLoop();
+      return () => { if (timerRef.current) clearTimeout(timerRef.current); };
     } else if (mode === 'brute') {
       const magicConst = getMagicConstant(size);
       timerRef.current = setInterval(() => {
