@@ -16,13 +16,12 @@ export const MagicSquareCard = ({
   steps = [], 
   speed = 500,
   triggerRun = 0,
-  triggerReset = 0,
-  onStatsUpdate // New prop for reporting live stats
+  triggerReset = 0
 }) => {
   const {
     currentStepIndex, setCurrentStepIndex,
     isPlaying, setIsPlaying,
-    isComplete: gameIsComplete,
+    isComplete: gameIsComplete, // 이름을 변경하여 충돌 방지
     practiceBoard, targetNum,
     setFeedback,
     isSoundEnabled,
@@ -30,31 +29,15 @@ export const MagicSquareCard = ({
     stats,
     dynamicDesc,
     dynamicHighlight
-  } = useMagicSquareGame({ 
-    size, mainMode, algoMode, steps, speed, triggerRun, triggerReset,
-    onComplete: (finalStats) => {
-        // Report final completion stats
-        if (onStatsUpdate) onStatsUpdate({ stats: finalStats, isRunning: false, isDone: true });
-    }
-  });
+  } = useMagicSquareGame({ size, mainMode, algoMode, steps, speed, triggerRun, triggerReset });
 
   const currentStep = steps[currentStepIndex] || { board: [], desc: "" };
   const { highlight } = currentStep;
   
+  // Logic for completion
   const isComplete = mainMode === 'simulation' 
     ? ((algoMode === 'formula' || algoMode === 'swing') ? currentStep?.type === 'complete' : gameIsComplete) 
     : gameIsComplete;
-
-  // Report live stats changes
-  useEffect(() => {
-    if (onStatsUpdate && mainMode === 'simulation') {
-        onStatsUpdate({ 
-            stats, 
-            isRunning: isPlaying && !isComplete, 
-            isDone: isComplete 
-        });
-    }
-  }, [stats, isPlaying, isComplete, onStatsUpdate, mainMode]);
 
   const magicConstant = (size * (size * size + 1)) / 2;
 
@@ -223,6 +206,23 @@ export const MagicSquareCard = ({
               </div>
             );
           })}
+        </div>
+
+        
+        {/* Column Sums */}
+        <div className={cn("flex items-center mt-1", getGapSize())}>
+            <div className="w-5 h-5 mr-1" /> {/* Spacer for Left Icon */}
+            {colSums.map((col, idx) => (
+                <div key={`col-sum-${idx}`} className={cn(
+                    getCellSize(), // Use same width as cells
+                    "flex items-center justify-center font-mono font-bold text-[9px] border-t-2 transition-all",
+                    col.isComplete ? "border-emerald-500/50 text-emerald-400" : "border-slate-700 text-slate-600",
+                    (isComplete || col.sum > 0) ? "opacity-100" : "opacity-0"
+                )}>
+                    {col.sum > 0 ? col.sum : ''}
+                </div>
+            ))}
+            <div className="w-5 h-5 ml-1" /> {/* Spacer for Right Sum */}
         </div>
       </div>
 

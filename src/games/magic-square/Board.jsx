@@ -31,9 +31,6 @@ export default function MagicSquareBoard({ speed }) {
   const [triggerReset, setTriggerReset] = useState(0);
   const [runningAlgos, setRunningAlgos] = useState(new Set());
   
-  // Custom Live Stats to sync ScoreCards
-  const [liveStats, setLiveStats] = useState({});
-
   // Scoreboard state
   const [showScoreboard, setShowScoreboard] = useState(false);
   const [scoreboardResults, setScoreboardResults] = useState([]);
@@ -64,6 +61,7 @@ export default function MagicSquareBoard({ speed }) {
     }
   };
 
+  // Stabilize steps generation using useMemo to prevent frequent re-calculation during clock ticks.
   const stepsData = useMemo(() => {
     return {
       dynamic: generateMagicSquareSteps(selectedSize, 'dynamic'),
@@ -80,7 +78,6 @@ export default function MagicSquareBoard({ speed }) {
     resultsRef.current = {};
     runningSetRef.current = new Set(selectedAlgos);
     setRunningAlgos(new Set(selectedAlgos));
-    setLiveStats({}); // Reset live stats on run
     setShowScoreboard(false);
     setTriggerRun(prev => prev + 1);
   };
@@ -88,21 +85,8 @@ export default function MagicSquareBoard({ speed }) {
   const handleResetAll = () => {
     runningSetRef.current = new Set();
     setRunningAlgos(new Set());
-    setLiveStats({}); // Reset live stats on reset
     setShowScoreboard(false);
     setTriggerReset(prev => prev + 1);
-  };
-
-  // Callback to receive live updates from child components
-  const handleStatsUpdate = (algoId, { stats, isRunning, isDone }) => {
-    setLiveStats(prev => ({
-        ...prev,
-        [algoId]: { stats, isRunning, isDone }
-    }));
-
-    if (isDone) {
-        handleAlgoComplete(algoId, stats);
-    }
   };
 
   const handleAlgoComplete = (algoId, stats) => {
@@ -144,6 +128,7 @@ export default function MagicSquareBoard({ speed }) {
    const ALGO_ORDER = ['formula', 'dynamic', 'heuristic', 'metric', 'backtrack', 'brute', 'swing'];
    const activeAlgos = [...selectedAlgos].sort((a, b) => ALGO_ORDER.indexOf(a) - ALGO_ORDER.indexOf(b));
    
+   // Combine boards and controller into a list for indexed rendering
    const renderItems = [];
    if (mainMode === 'simulation') {
      activeAlgos.forEach((algoId) => {
@@ -153,6 +138,7 @@ export default function MagicSquareBoard({ speed }) {
     renderItems.push({ type: 'board', algoId: 'formula' });
   }
 
+  // Insert controller at 3rd position (index 2) or at the end if fewer than 2 boards
   const insertIdx = Math.min(2, renderItems.length);
   renderItems.splice(insertIdx, 0, { type: 'control' });
 
@@ -189,13 +175,12 @@ export default function MagicSquareBoard({ speed }) {
                     speed={speed}
                     triggerRun={triggerRun}
                     triggerReset={triggerReset}
-                    onStatsUpdate={(update) => handleStatsUpdate(item.algoId, update)}
                 />
             )
         ))}
       </div>
 
-      {/* Comparison Scoreboard - Syncs directly with MagicSquareCard state via liveStats */}
+      {/* Comparison Scoreboard - Hidden on Mobile */}
       {mainMode === 'simulation' && activeAlgos.length > 0 && (
           <div className="hidden md:block mt-8 overflow-hidden bg-slate-800/40 backdrop-blur-xl border border-white/5 rounded-3xl shadow-2xl">
               <div className="bg-slate-900/50 px-4 py-3 border-b border-white/5 flex items-center justify-between">
@@ -212,24 +197,24 @@ export default function MagicSquareBoard({ speed }) {
               </div>
               <div className="p-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {activeAlgos.map((algoId) => {
-                           const currentStats = liveStats[algoId] || { stats: { attempts: 0, time: 0 }, isRunning: false, isDone: false };
-                           return (
-                                <ScoreCard 
-                                 key={`score-${algoId}`} 
-                                 algoId={algoId} 
-                                 size={selectedSize}
-                                 stats={currentStats.stats}
-                                 isRunning={currentStats.isRunning}
-                                 isDone={currentStats.isDone}
-                               />
-                           );
-                      })}
+                      {activeAlgos.map((algoId) => (
+                            <ScoreCard 
+                             key={`score-${algoId}`} 
+                             algoId={algoId} 
+                             size={selectedSize}
+                             triggerRun={triggerRun}
+                             triggerReset={triggerReset}
+                             speed={speed}
+                             steps={stepsData[algoId] || []}
+                             onComplete={(s) => handleAlgoComplete(algoId, s)}
+                           />
+                      ))}
                   </div>
               </div>
           </div>
       )}
 
+      {/* Lab Info Banner - Only show when no simulation is active to reduce clutter */}
       {mainMode !== 'simulation' && (
           <div className="mt-12 flex flex-col gap-6">
               <div className="bg-emerald-950/20 border border-emerald-500/20 rounded-3xl p-8 flex flex-col md:flex-row items-center gap-8 shadow-2xl relative overflow-hidden group">
@@ -254,6 +239,7 @@ export default function MagicSquareBoard({ speed }) {
         )}
       </AnimatePresence>
 
+      {/* Mobile Floating Menu */}
       <MagicMobileControlBar 
           selectedSize={selectedSize}
           setSelectedSize={setSelectedSize}
@@ -269,6 +255,7 @@ export default function MagicSquareBoard({ speed }) {
           setShowAlgoTable={setShowAlgoTable}
       />
 
+      {/* Results Modal */}
       {showScoreboard && (
           <MagicScoreboard 
             results={scoreboardResults}
@@ -278,3 +265,4 @@ export default function MagicSquareBoard({ speed }) {
     </div>
   );
 }
+
