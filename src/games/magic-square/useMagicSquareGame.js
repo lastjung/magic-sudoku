@@ -78,7 +78,7 @@ export const useMagicSquareGame = ({ size, mainMode, algoMode, steps, speed, tri
 
   useEffect(() => {
     let interval;
-    if (isPlaying) {
+    if (isPlaying && !isComplete) {
       interval = setInterval(() => {
         if (startTimeRef.current > 0) {
           const elapsed = Math.floor(performance.now() - startTimeRef.current);
@@ -87,9 +87,11 @@ export const useMagicSquareGame = ({ size, mainMode, algoMode, steps, speed, tri
       }, 100); 
     }
     return () => { if (interval) clearInterval(interval); };
-  }, [isPlaying]);
+  }, [isPlaying, isComplete]);
 
   useEffect(() => {
+    let isActive = true; // Loop 중단 플래그
+
     if (!isPlaying) {
       if (timerRef.current) {
         clearTimeout(timerRef.current);
@@ -116,7 +118,7 @@ export const useMagicSquareGame = ({ size, mainMode, algoMode, steps, speed, tri
         if (startTimeRef.current === 0) startTimeRef.current = performance.now();
         let currentIndex = currentStepIndex;
         
-        while (currentIndex < steps.length - 1 && isPlaying) {
+        while (currentIndex < steps.length - 1 && isActive && isPlaying) {
           const step = steps[currentIndex];
           let delay = playbackDelay;
           if (size === 8 && step.type === 'setup') delay = Math.max(30, playbackDelay / 4);
@@ -125,7 +127,8 @@ export const useMagicSquareGame = ({ size, mainMode, algoMode, steps, speed, tri
           
           await new Promise(resolve => { timerRef.current = setTimeout(resolve, delay); });
           
-          if (!isPlaying) break;
+          if (!isActive || !isPlaying) break;
+
           currentIndex++;
           setCurrentStepIndex(currentIndex);
           setStats(prev => ({ ...prev, attempts: currentIndex }));
@@ -138,12 +141,11 @@ export const useMagicSquareGame = ({ size, mainMode, algoMode, steps, speed, tri
           }
 
           if (currentIndex === steps.length - 1 || steps[currentIndex].type === 'complete') {
+            const finalTime = performance.now() - startTimeRef.current;
             setIsPlaying(false);
             setIsComplete(true);
-            if (onComplete) {
-              const totalTime = performance.now() - startTimeRef.current;
-              onComplete({ attempts: currentIndex, time: totalTime });
-            }
+            setStats(prev => ({ ...prev, time: finalTime }));
+            if (onComplete) onComplete({ attempts: currentIndex, time: finalTime });
             break;
           }
         }
@@ -151,33 +153,29 @@ export const useMagicSquareGame = ({ size, mainMode, algoMode, steps, speed, tri
       runLearnLoop();
     } else {
         const solveStep = () => {
-            if (!isPlaying) return;
+            if (!isActive || !isPlaying) return;
 
             let result;
-            if (algoMode === 'heuristic') {
-                result = solveHeuristicStep(solverRef.current, size);
-            } else if (mode === 'brute' || algoMode === 'backtrack' || algoMode === 'metric') {
-                result = solveBacktrackStep(solverRef.current, size, algoMode);
-            } else if (mode === 'dynamic') {
-                result = solveDynamicStep(solverRef.current, size);
-            }
+            if (algoMode === 'heuristic') result = solveHeuristicStep(solverRef.current, size);
+            else if (mode === 'brute' || algoMode === 'backtrack' || algoMode === 'metric') result = solveBacktrackStep(solverRef.current, size, algoMode);
+            else if (mode === 'dynamic') result = solveDynamicStep(solverRef.current, size);
 
-            if (result) {
+            if (result && isActive) {
                 setPracticeBoard(result.board);
-                setStats(prev => ({ ...prev, attempts: prev.attempts + 1 }));
                 setDynamicDesc(result.desc || "");
                 setDynamicHighlight(result.highlight || null);
                 
                 if (isSoundEnabled && result.val) audioEngine.playNote(result.val);
 
                 if (result.isComplete) {
+                    const finalTime = performance.now() - startTimeRef.current;
                     setIsPlaying(false);
                     setIsComplete(true);
-                    const totalTime = performance.now() - startTimeRef.current;
-                    setStats(prev => ({ ...prev, time: totalTime }));
+                    setStats(prev => ({ attempts: stats.attempts + 1, time: finalTime }));
                     if (isSoundEnabled) audioEngine.playSuccess();
-                    if (onComplete) onComplete({ attempts: stats.attempts + 1, time: totalTime });
+                    if (onComplete) onComplete({ attempts: stats.attempts + 1, time: finalTime });
                 } else {
+                    setStats(prev => ({ ...prev, attempts: prev.attempts + 1 }));
                     timerRef.current = setTimeout(solveStep, playbackDelay);
                 }
             }
@@ -185,7 +183,10 @@ export const useMagicSquareGame = ({ size, mainMode, algoMode, steps, speed, tri
         timerRef.current = setTimeout(solveStep, playbackDelay);
     }
 
-    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+    return () => { 
+        isActive = false;
+        if (timerRef.current) clearTimeout(timerRef.current); 
+    };
   }, [isPlaying, currentStepIndex, steps, playbackDelay, mode, algoMode, size, onComplete, isSoundEnabled]);
 
   const handlePracticeClick = (r, c, onSuccess, onError) => {
@@ -203,11 +204,11 @@ export const useMagicSquareGame = ({ size, mainMode, algoMode, steps, speed, tri
       onSuccess(correctStep);
       
       if (targetNum === size * size) {
+        const finalTime = performance.now() - startTimeRef.current;
         setIsComplete(true);
-        const totalTime = performance.now() - startTimeRef.current;
-        setStats(prev => ({ ...prev, time: totalTime }));
+        setStats(prev => ({ ...prev, time: finalTime }));
         if (isSoundEnabled) audioEngine.playSuccess();
-        if (onComplete) onComplete({ attempts: stats.attempts, time: totalTime });
+        if (onComplete) onComplete({ attempts: stats.attempts, time: finalTime });
       }
     } else {
       setStats(prev => ({ ...prev, attempts: prev.attempts + 1 }));
@@ -220,6 +221,6 @@ export const useMagicSquareGame = ({ size, mainMode, algoMode, steps, speed, tri
     feedback, setFeedback, isSoundEnabled, setIsSoundEnabled,
     stats, currentStepIndex, isPlaying, setIsPlaying,
     isComplete, resetPractice, handlePracticeClick,
-    dynamicDesc, dynamicHighlight, setCurrentStepIndex // 반환값 추가
+    dynamicDesc, dynamicHighlight, setCurrentStepIndex
   };
 };
