@@ -1,6 +1,21 @@
 export class MagicSquareSwing {
+    // Exact logic for Snake (ZigZag) placement
+    static getZigZagPositions(n) {
+        const pos = [];
+        for (let r = 0; r < n; r++) {
+            if (r % 2 === 0) {
+                // Left -> Right
+                for (let c = 0; c < n; c++) pos.push({r, c});
+            } else {
+                // Right -> Left
+                for (let c = n - 1; c >= 0; c--) pos.push({r, c});
+            }
+        }
+        return pos;
+    }
+
     static generateSteps(n) {
-      if (n !== 4) return [];
+      if (n !== 4 && n !== 8) return [];
       
       const board = Array.from({ length: n }, () => Array(n).fill(null));
       const steps = [];
@@ -15,34 +30,29 @@ export class MagicSquareSwing {
         });
       };
       
-      // 1. Defined ZigZag (Snake) positions in a simple list
-      const positions = [
-        {r:0, c:0}, {r:0, c:1}, {r:0, c:2}, {r:0, c:3}, // Row 0: Left to Right
-        {r:1, c:3}, {r:1, c:2}, {r:1, c:1}, {r:1, c:0}, // Row 1: Right to Left
-        {r:2, c:0}, {r:2, c:1}, {r:2, c:2}, {r:2, c:3}, // Row 2: Left to Right
-        {r:3, c:3}, {r:3, c:2}, {r:3, c:1}, {r:3, c:0}  // Row 3: Right to Left
-      ];
+      // Starting point: Ready
+      addStep(board, null, null, "Ready to Fill", "setup");
 
-      // 2. Sequentially fill the board based on the list
+      // 1. Fill step-by-step using FOR LOOP and POSITION LIST
+      const positions = this.getZigZagPositions(n);
       for (let i = 0; i < positions.length; i++) {
         const { r, c } = positions[i];
-        const val = i + 1;
-        board[r][c] = val;
-        addStep(board, val, { r, c }, "ZigZag Fill", "setup");
+        board[r][c] = i + 1;
+        addStep(board, i + 1, { r, c }, "ZigZag Filling", "setup");
       }
       
-      const targets = [
-        {r: 0, c: 1}, {r: 1, c: 1}, {r: 2, c: 1}, {r: 3, c: 1},
-        {r: 0, c: 2}, {r: 1, c: 2}, {r: 2, c: 2}, {r: 3, c: 2}
-      ];
+      // 2. Target Columns
+      const targetCols = n === 4 ? [1, 2] : [1, 2, 5, 6];
+      const targets = [];
+      for (let r = 0; r < n; r++) {
+          for (let c of targetCols) targets.push({r, c});
+      }
 
-      // 3. Highlight Step (Select Swing Cells)
+      // 3. Highlight and Rotate
       addStep(board, null, { targets }, "Select Swing Cells", "highlight_targets");
-
-      // 4. Rotation Animation Logic
       addStep(board, null, { targets }, "Swing!", "swing_rotating");
       
-      // 5. Final state calculation
+      // 4. Result
       const finalBoard = JSON.parse(JSON.stringify(board));
       for (const { r, c } of targets) {
           finalBoard[n-1-r][n-1-c] = board[r][c];

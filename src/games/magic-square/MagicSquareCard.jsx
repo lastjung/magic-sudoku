@@ -261,12 +261,20 @@ export const MagicSquareCard = ({
                   }
 
                   let swingStyle = {};
-                  const isSwingTarget = algoMode === 'swing' && size === 4 && (c === 1 || c === 2);
+                  const isSwingTarget4 = algoMode === 'swing' && size === 4 && (c === 1 || c === 2);
+                  const isSwingTarget8 = algoMode === 'swing' && size === 8 && (c === 1 || c === 2 || c === 5 || c === 6);
                   
-                  if (isSwingTarget && (currentStep?.type === 'highlight_targets' || currentStep?.type === 'swing_rotating' || isComplete)) {
-                    const stride = 56;
+                  if (isSwingTarget4 && (currentStep?.type === 'highlight_targets' || currentStep?.type === 'swing_rotating' || isComplete)) {
+                    const w = 56; // Cell width for 4x4
+                    const g = 8;  // gap-2 is 8px
+                    const stride = w + g;
+                    
                     const offsetX = (1.5 - c) * stride;
                     const offsetY = (1.5 - r) * stride;
+                    
+                    const originX = ((w / 2 + offsetX) / w) * 100;
+                    const originY = ((w / 2 + offsetY) / w) * 100;
+
                     swingStyle = {
                       backgroundColor: 'rgba(245, 158, 11, 0.6)',
                       borderColor: 'rgb(245, 158, 11)',
@@ -274,7 +282,38 @@ export const MagicSquareCard = ({
                       color: '#fff',
                       zIndex: 40,
                       ...(currentStep?.type === 'swing_rotating' ? {
-                        transformOrigin: `${50 + (offsetX / stride * 100)}% ${50 + (offsetY / stride * 100)}%`,
+                        transformOrigin: `${originX}% ${originY}%`,
+                        transform: 'rotate(180deg)',
+                        transition: 'transform 3.6s cubic-bezier(0.4, 0, 0.2, 1)',
+                      } : {
+                        transform: 'none',
+                        transition: isComplete ? 'none' : 'background-color 1s ease-in-out, border-color 1s ease-in-out, box-shadow 1s ease-in-out'
+                      })
+                    };
+                  }
+
+                  if (isSwingTarget8 && (currentStep?.type === 'highlight_targets' || currentStep?.type === 'swing_rotating' || isComplete)) {
+                    const w = 38; // Cell width for 8x8
+                    const g = 4;  // gap-1 is 4px
+                    const stride = w + g; // Real distance between cell centers
+                    
+                    // The center of an 8x8 board is between index 3 and 4 -> 3.5
+                    const offsetX = (3.5 - c) * stride;
+                    const offsetY = (3.5 - r) * stride;
+                    
+                    // transformOrigin is relative to the cell's own top-left.
+                    // Center of cell is (w/2, w/2). We add the offset to the board center.
+                    const originX = ((w / 2 + offsetX) / w) * 100;
+                    const originY = ((w / 2 + offsetY) / w) * 100;
+
+                    swingStyle = {
+                      backgroundColor: 'rgba(245, 158, 11, 0.6)',
+                      borderColor: 'rgb(245, 158, 11)',
+                      boxShadow: '0 0 40px rgba(245, 158, 11, 0.4)',
+                      color: '#fff',
+                      zIndex: 40,
+                      ...(currentStep?.type === 'swing_rotating' ? {
+                        transformOrigin: `${originX}% ${originY}%`,
                         transform: 'rotate(180deg)',
                         transition: 'transform 3.6s cubic-bezier(0.4, 0, 0.2, 1)',
                       } : {

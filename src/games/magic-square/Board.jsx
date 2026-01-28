@@ -196,8 +196,8 @@ const MagicControlCard = ({
 };
 
 export default function MagicSquareBoard({ speed }) {
-  const [selectedSize, setSelectedSize] = useState(4);
-  const [selectedAlgos, setSelectedAlgos] = useState(new Set(['formula', 'swing']));
+  const [selectedSize, setSelectedSize] = useState(8);
+  const [selectedAlgos, setSelectedAlgos] = useState(new Set(['swing']));
   const [mainMode, setMainMode] = useState('simulation');
   const [triggerRun, setTriggerRun] = useState(0);
   const [triggerReset, setTriggerReset] = useState(0);
@@ -233,14 +233,17 @@ export default function MagicSquareBoard({ speed }) {
     }
   };
 
-  // Memoize all simulation steps to prevent unnecessary resets when other state changes
-  const memoizedStepsData = useMemo(() => {
-    const data = {};
-    const allIds = ['dynamic', 'heuristic', 'metric', 'backtrack', 'brute', 'formula', 'swing'];
-    allIds.forEach(id => {
-      data[id] = generateMagicSquareSteps(selectedSize, id);
-    });
-    return data;
+  // Stabilize steps generation using useMemo to prevent frequent re-calculation during clock ticks.
+  const stepsData = useMemo(() => {
+    return {
+      dynamic: generateMagicSquareSteps(selectedSize, 'dynamic'),
+      heuristic: generateMagicSquareSteps(selectedSize, 'heuristic'),
+      metric: generateMagicSquareSteps(selectedSize, 'metric'),
+      backtrack: generateMagicSquareSteps(selectedSize, 'backtrack'),
+      brute: generateMagicSquareSteps(selectedSize, 'brute'),
+      formula: generateMagicSquareSteps(selectedSize, 'formula'),
+      swing: generateMagicSquareSteps(selectedSize, 'swing')
+    };
   }, [selectedSize]);
 
   const handleRunAll = () => {
@@ -294,7 +297,7 @@ export default function MagicSquareBoard({ speed }) {
     }
   };
 
-   const ALGO_ORDER = ['formula', 'dynamic', 'heuristic', 'metric', 'backtrack', 'brute'];
+   const ALGO_ORDER = ['formula', 'dynamic', 'heuristic', 'metric', 'backtrack', 'brute', 'swing'];
    const activeAlgos = [...selectedAlgos].sort((a, b) => ALGO_ORDER.indexOf(a) - ALGO_ORDER.indexOf(b));
    
    // Combine boards and controller into a list for indexed rendering
@@ -335,11 +338,11 @@ export default function MagicSquareBoard({ speed }) {
                 </div>
             ) : (
                 <MagicSquareCard 
-                    key={`${selectedSize}-${item.algoId}-${index}`}
+                    key={`${selectedSize}-${item.algoId}-${triggerReset}-${index}`}
                     size={selectedSize}
                     mainMode={mainMode}
                     algoMode={item.algoId}
-                    steps={memoizedStepsData[item.algoId] || []}
+                    steps={stepsData[item.algoId] || []}
                     speed={speed}
                     triggerRun={triggerRun}
                     triggerReset={triggerReset}
@@ -373,7 +376,7 @@ export default function MagicSquareBoard({ speed }) {
                              triggerRun={triggerRun}
                              triggerReset={triggerReset}
                              speed={speed}
-                             steps={memoizedStepsData[algoId] || []}
+                             steps={stepsData[algoId] || []}
                              onComplete={(s) => handleAlgoComplete(algoId, s)}
                            />
                       ))}
@@ -436,6 +439,7 @@ export default function MagicSquareBoard({ speed }) {
 
 const ScoreCard = ({ algoId, size, triggerRun, triggerReset, speed, steps, onComplete }) => {
     const [finalStats, setFinalStats] = useState({ attempts: 0, time: 0 });
+    const [isSoundEnabled, setIsSoundEnabled] = useState(true);
     const [isDone, setIsDone] = useState(false);
 
     const labels = {
