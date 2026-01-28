@@ -177,23 +177,23 @@ export const MagicCell = ({
         
         isFormula && currentStep?.type === 'invert' && isFormulaHighlight && "bg-purple-500/40 border-purple-400 ring-1 ring-purple-400 animate-pulse text-white",
         
-        // --- Swap Visualization (Two Colors Swapping) ---
-        // 1. Prepare: Source = Amber, Target = Cyan
+        // --- Swap Visualization (Text Color) ---
+        // 1. Prepare: Source = Amber Text, Target = Cyan Text
         (currentStep?.type === 'swap_highlight') && (
             (highlight?.r === r && highlight?.c === c) ? 
-                "bg-amber-600 border-amber-400 text-white shadow-[0_0_15px_rgba(245,158,11,0.5)] scale-110 z-50 ring-2 ring-white" :
+                "text-amber-400 !bg-emerald-900 border-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.5)] scale-110 z-50 ring-2 ring-amber-400" :
             (highlight?.targets?.[0]?.r === r && highlight?.targets?.[0]?.c === c) ?
-                "bg-cyan-600 border-cyan-400 text-white shadow-[0_0_15px_rgba(6,182,212,0.5)] scale-110 z-50 ring-2 ring-white" : ""
+                "text-cyan-400 !bg-emerald-900 border-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.5)] scale-110 z-50 ring-2 ring-cyan-400" : ""
         ),
 
-        // 2. Done: Source becomes Cyan, Target becomes Amber (Simulating value/color move)
+        // 2. Done: Source becomes Cyan Text, Target becomes Amber Text
         (currentStep?.type === 'swap') && (
             (highlight?.r === r && highlight?.c === c) ? 
-                "bg-cyan-600 border-cyan-400 text-white scale-100 z-50 transition-colors duration-700" :
+                "text-cyan-400 !bg-emerald-900 border-cyan-400 scale-100 z-50 transition-all duration-700" :
             (highlight?.targets?.[0]?.r === r && highlight?.targets?.[0]?.c === c) ?
-                "bg-amber-600 border-amber-400 text-white scale-100 z-50 transition-colors duration-700" : ""
+                "text-amber-400 !bg-emerald-900 border-amber-400 scale-100 z-50 transition-all duration-700" : ""
         ),
-        // ------------------------------------------------
+        // ---------------------------------------
 
         isDynHighlight && highlightType === 'active' && "ring-2 ring-amber-400 bg-amber-900/40 z-10 scale-105",
         isDynHighlight && highlightType === 'forced' && "ring-2 ring-purple-400 bg-purple-900/60 z-10 scale-110 shadow-lg shadow-purple-500/40",
