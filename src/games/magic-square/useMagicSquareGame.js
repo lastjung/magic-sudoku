@@ -2,7 +2,9 @@ import { useState, useEffect, useRef } from 'react';
 import { audioEngine } from '../../utils/audio';
 
 export const useMagicSquareGame = ({ size, mainMode, algoMode, steps, speed, triggerRun = 0, triggerReset = 0, onComplete }) => {
-  const mode = mainMode === 'simulation' ? (algoMode === 'formula' ? 'learn' : (algoMode === 'dynamic' ? 'dynamic' : 'brute')) : 'practice';
+  const mode = mainMode === 'simulation' 
+    ? (algoMode === 'formula' || algoMode === 'swing' ? 'learn' : (algoMode === 'dynamic' ? 'dynamic' : 'brute')) 
+    : 'practice';
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [practiceBoard, setPracticeBoard] = useState([]);
@@ -22,9 +24,25 @@ export const useMagicSquareGame = ({ size, mainMode, algoMode, steps, speed, tri
   const solverRef = useRef(null);
 
   const resetPractice = () => {
-    const initialBoard = Array.from({ length: size }, () => Array(size).fill(null));
+    let initialBoard = Array.from({ length: size }, () => Array(size).fill(null));
+    
+    // Formula Swing: Instant 1-16 fill for 4x4 (ZigZag)
+    if (algoMode === 'swing' && size === 4) {
+      for (let r = 0; r < 4; r++) {
+        for (let c = 0; c < 4; c++) {
+          if (r % 2 === 0) {
+            initialBoard[r][c] = (r * 4) + c + 1;
+          } else {
+            initialBoard[r][c] = (r * 4) + (4 - 1 - c) + 1;
+          }
+        }
+      }
+      setTargetNum(17);
+    } else {
+      setTargetNum(1);
+    }
+
     setPracticeBoard(initialBoard);
-    setTargetNum(1);
     setLastCorrectPos({ r: 0, c: 0 });
     setFeedback(null);
     setStats({ attempts: 0, time: 0 });

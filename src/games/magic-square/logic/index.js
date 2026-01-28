@@ -3,11 +3,17 @@
 import { MagicSquareOdd } from './odd';
 import { MagicSquareDoublyEven } from './doubly-even';
 import { generateSinglyEvenSteps } from './singly-even';
+import { MagicSquareSwing } from './swing';
 
 /**
  * Generates step-by-step visualization data for a magic square of order n.
  */
-export function generateMagicSquareSteps(n) {
+export function generateMagicSquareSteps(n, algoMode = 'formula') {
+  // Case 0: Specific "Swing" Mode (Currently 4x4 only)
+  if (algoMode === 'swing' && n === 4) {
+    return MagicSquareSwing.generateSteps(n);
+  }
+
   // Case 1: Odd Order (3, 5, 7...)
   if (n % 2 !== 0) {
     return MagicSquareOdd.generateSteps(n);

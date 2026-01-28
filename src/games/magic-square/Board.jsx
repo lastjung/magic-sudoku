@@ -28,6 +28,7 @@ const MagicControlCard = ({
 }) => {
   const simulationAlgos = [
     { id: 'formula', label: 'Formula', icon: BookOpen },
+    { id: 'swing', label: 'Swing', icon: RotateCcw },
     { id: 'dynamic', label: 'CSP Solver', icon: BrainCircuit },
     { id: 'heuristic', label: 'Smart BT', icon: LayoutGrid },
     { id: 'metric', label: 'Metric BT', icon: Zap },
@@ -195,8 +196,8 @@ const MagicControlCard = ({
 };
 
 export default function MagicSquareBoard({ speed }) {
-  const [selectedSize, setSelectedSize] = useState(3);
-  const [selectedAlgos, setSelectedAlgos] = useState(new Set(['formula']));
+  const [selectedSize, setSelectedSize] = useState(4);
+  const [selectedAlgos, setSelectedAlgos] = useState(new Set(['formula', 'swing']));
   const [mainMode, setMainMode] = useState('simulation');
   const [triggerRun, setTriggerRun] = useState(0);
   const [triggerReset, setTriggerReset] = useState(0);
@@ -224,7 +225,7 @@ export default function MagicSquareBoard({ speed }) {
   };
 
   const toggleAllAlgos = () => {
-    const allIds = ['dynamic', 'heuristic', 'metric', 'backtrack', 'brute', 'formula'];
+    const allIds = ['dynamic', 'heuristic', 'metric', 'backtrack', 'brute', 'formula', 'swing'];
     if (selectedAlgos.size === allIds.length) {
         setSelectedAlgos(new Set());
     } else {
@@ -232,9 +233,15 @@ export default function MagicSquareBoard({ speed }) {
     }
   };
 
-  const stepsData = useMemo(() => {
-    return generateMagicSquareSteps(selectedSize);
-  }, [selectedSize]);
+  // stepsData is no longer a single global; each card generates its own in the map or we pass the generator
+
+
+  // Note: Since individual cards call their own useMagicSquareGame which might need specific steps,
+  // we should ideally pass a function or let the card generate its own steps if they differ by algo.
+  // But currently MagicSquareCard receives 'steps' as a prop.
+  // Actually, 'formula' and 'swing' are the only ones using the 'steps' prop for simulation.
+  // Others use the internal solver.
+
 
   const handleRunAll = () => {
     resultsRef.current = {};
@@ -260,7 +267,8 @@ export default function MagicSquareBoard({ speed }) {
       metric: { name: 'Metric Backtrack' },
       backtrack: { name: 'Recursive Backtrack' },
       brute: { name: 'Pure Brute Force' },
-      formula: { name: 'Direct Formula' }
+      formula: { name: 'Direct Formula' },
+      swing: { name: 'Formula Swing' }
     };
 
     if (runningSetRef.current.has(algoId)) {
@@ -331,7 +339,7 @@ export default function MagicSquareBoard({ speed }) {
                     size={selectedSize}
                     mainMode={mainMode}
                     algoMode={item.algoId}
-                    steps={stepsData}
+                    steps={generateMagicSquareSteps(selectedSize, item.algoId)}
                     speed={speed}
                     triggerRun={triggerRun}
                     triggerReset={triggerReset}
@@ -365,7 +373,7 @@ export default function MagicSquareBoard({ speed }) {
                              triggerRun={triggerRun}
                              triggerReset={triggerReset}
                              speed={speed}
-                             steps={stepsData}
+                             steps={generateMagicSquareSteps(selectedSize, algoId)}
                              onComplete={(s) => handleAlgoComplete(algoId, s)}
                            />
                       ))}
@@ -436,7 +444,8 @@ const ScoreCard = ({ algoId, size, triggerRun, triggerReset, speed, steps, onCom
       metric: { name: 'Metric Backtrack', desc: 'Distance-based pruning', color: 'text-lime-400/80', bg: 'bg-lime-400/60' },
       backtrack: { name: 'Recursive Backtrack', desc: 'Classic recursive search', color: 'text-rose-400', bg: 'bg-rose-500' },
       brute: { name: 'Pure Brute Force', desc: 'Exhaustive permutation search', color: 'text-slate-400', bg: 'bg-slate-500' },
-      formula: { name: 'Direct Formula', desc: 'Static magic square construction', color: 'text-emerald-400', bg: 'bg-emerald-500' }
+      formula: { name: 'Direct Formula', desc: 'Static magic square construction', color: 'text-emerald-400', bg: 'bg-emerald-500' },
+      swing: { name: 'Formula Swing', desc: '4x4 Rotation algorithm', color: 'text-sky-400', bg: 'bg-sky-500' }
     };
 
     const l = labels[algoId] || { name: algoId, desc: '', color: 'text-white', bg: 'bg-white' };

@@ -31,11 +31,11 @@ export const MagicSquareCard = ({
 
   const currentStep = steps[currentStepIndex] || { board: [], desc: "" };
   const { highlight } = currentStep;
-  const isComplete = mainMode === 'simulation' ? (algoMode === 'formula' ? currentStep?.type === 'complete' : targetNum > size * size) : targetNum > size * size;
+  const isComplete = mainMode === 'simulation' ? ((algoMode === 'formula' || algoMode === 'swing') ? currentStep?.type === 'complete' : targetNum > size * size) : targetNum > size * size;
   const magicConstant = (size * (size * size + 1)) / 2;
 
-  // Sync board for Formula Mode - only when playing or complete
-  const displayBoard = (mainMode === 'simulation' && algoMode === 'formula' && (isPlaying || isComplete) && currentStep?.board?.length > 0) 
+  // Sync board for Formula/Swing Mode - only when playing or complete
+  const displayBoard = (mainMode === 'simulation' && (algoMode === 'formula' || algoMode === 'swing') && (isPlaying || isComplete || currentStepIndex > 0) && currentStep?.board?.length > 0) 
     ? currentStep.board 
     : practiceBoard;
 
@@ -89,7 +89,8 @@ export const MagicSquareCard = ({
       metric: 'Metric Backtrack',
       backtrack: 'Recursive Backtrack',
       brute: 'Pure Brute Force',
-      formula: 'Direct Formula'
+      formula: 'Direct Formula',
+      swing: 'Formula Swing'
     };
     return labels[id] || id;
   };
@@ -205,12 +206,12 @@ export const MagicSquareCard = ({
                 <div className="w-5 h-5 mr-1 opacity-0" />
                 {row.map((v, c) => {
                   const isDynHighlight = isPlaying && algoMode === 'dynamic' && dynamicHighlight?.r === r && dynamicHighlight?.c === c;
-                  const isFormulaHighlight = isPlaying && algoMode === 'formula' && highlight?.r === r && highlight?.c === c;
+                  const isFormulaHighlight = isPlaying && (algoMode === 'formula' || algoMode === 'swing') && highlight?.r === r && highlight?.c === c;
                   const highlightType = algoMode === 'dynamic' ? dynamicHighlight?.type : null;
-                  const isFormula = algoMode === 'formula';
+                  const isFormula = algoMode === 'formula' || algoMode === 'swing';
 
                   let cellStyle = {};
-                  if (v && isFormula) {
+                  if (v && algoMode === 'formula') {
                     const bg = getFormulaColor(v, r, c, isComplete);
                     cellStyle = {
                       backgroundColor: bg,
@@ -281,6 +282,27 @@ export const MagicSquareCard = ({
                                 currentStep?.type === 'mass_invert' ? "scale-100 rotate-y-180 bg-purple-500/50 border-purple-400 text-white shadow-purple-500/40 ring-1 ring-purple-300" : ""  
                             )
                         ),
+                        
+                        // --- Swing Mode Specific Visuals ---
+                        algoMode === 'swing' && (currentStep?.type === 'swing_prepare' || currentStep?.type === 'swing_done') &&
+                        highlight?.targets?.some(t => t.r === r && t.c === c) && (
+                            cn(
+                                "z-40 transition-all duration-1000 ease-in-out",
+                                currentStep?.type === 'swing_prepare' ? (
+                                    "scale-110 shadow-[0_0_30px_rgba(56,189,248,0.6)] border-sky-400 bg-sky-500/40 text-white"
+                                ) : "",
+                                currentStep?.type === 'swing_done' ? (
+                                    "scale-100 rotate-y-180 bg-indigo-500/70 border-indigo-300 text-white shadow-[0_0_40px_rgba(99,102,241,0.7)] ring-2 ring-indigo-400/50"
+                                ) : ""
+                            )
+                        ),
+                        
+                        algoMode === 'swing' && currentStep?.type === 'scan_swing' && (
+                             highlight?.targets?.some(t => t.r === r && t.c === c)
+                               ? "ring-2 ring-sky-400/50 shadow-[0_0_20px_rgba(56,189,248,0.3)] bg-sky-900/60 text-sky-100 z-10"
+                               : "opacity-30 grayscale-[0.8]"
+                        ),
+                        // -----------------------------------
                         
                         // Individual Invert (Fallback)
                         isFormula && currentStep?.type === 'invert' && isFormulaHighlight && "bg-purple-500/40 border-purple-400 ring-1 ring-purple-400 animate-pulse text-white",

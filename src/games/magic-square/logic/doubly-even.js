@@ -72,7 +72,7 @@ export class MagicSquareDoublyEven {
       addStep(board, null, { targets: group2Targets, group: 'left_right' }, "Invert Left & Right!", "mass_invert");
 
       // Final Settle
-      addStep(board, null, null, "Doubly Even Magic Square Balanced!", "complete");
+      addStep(board, null, null, "4x4 Magic Balanced via Formula Swing", "complete");
       
       return steps;
     }
