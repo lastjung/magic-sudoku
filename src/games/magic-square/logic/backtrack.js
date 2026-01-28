@@ -9,14 +9,19 @@ export function solveBacktrackStep(solver, size, algoMode) {
     const { board, used, stack } = solver;
     const magicConst = (size * (size * size + 1)) / 2;
 
+    // --- Final Validation Check ---
     if (solver.currentNum > size * size) {
-        return { board: reconstructBoard(board, size), isComplete: true, desc: "Solution found!" };
+        if (isActuallyMagic(board, size, magicConst)) {
+            return { board: reconstructBoard(board, size), isComplete: true, desc: "Solution found!" };
+        } else {
+            // If brute force filled it wrong, backtrack from the last number
+            return handleFailureAndBacktrack(solver, size, "Invalid arrangement. Backtracking...");
+        }
     }
 
     let stackFrame = stack[solver.currentNum];
     if (!stackFrame) {
         let candidates = [];
-        // Available positions (empty cells)
         for (let i = 0; i < size * size; i++) {
             if (board[i] === null) candidates.push(i);
         }
@@ -26,9 +31,7 @@ export function solveBacktrackStep(solver, size, algoMode) {
             candidates.sort((a, b) => {
                 const r1 = Math.floor(a/size), c1 = a%size;
                 const r2 = Math.floor(b/size), c2 = b%size;
-                const d1 = Math.pow(r1-center, 2) + Math.pow(c1-center, 2);
-                const d2 = Math.pow(r2-center, 2) + Math.pow(c2-center, 2);
-                return d1 - d2;
+                return (Math.pow(r1-center, 2) + Math.pow(c1-center, 2)) - (Math.pow(r2-center, 2) + Math.pow(c2-center, 2));
             });
         } else if (algoMode === 'backtrack') {
             for (let i = candidates.length - 1; i > 0; i--) {
@@ -41,38 +44,22 @@ export function solveBacktrackStep(solver, size, algoMode) {
         stack[solver.currentNum] = stackFrame;
     }
 
-    // Clear previous position for this number if we are moving to next candidate
+    // Try next candidate
     const oldPos = board.indexOf(solver.currentNum);
     if (oldPos !== -1) board[oldPos] = null;
     used[solver.currentNum] = false;
 
     stackFrame.triedIndex++;
     if (stackFrame.triedIndex >= stackFrame.candidates.length) {
-        // Backtrack to previous number
-        stack[solver.currentNum] = null;
-        solver.currentNum--;
-        
-        if (solver.currentNum < 1) {
-            solver.currentNum = 1;
-            return { board: reconstructBoard(board, size), isComplete: true, desc: "No solution." };
-        }
-
-        // Return mid-backtrack state
-        return {
-            board: reconstructBoard(board, size),
-            highlight: null,
-            desc: `Backtracking: No positions left for ${solver.currentNum + 1}`
-        };
+        return handleFailureAndBacktrack(solver, size, `Backtracking: No positions left for ${solver.currentNum}`);
     }
 
     const pos = stackFrame.candidates[stackFrame.triedIndex];
-    const r = Math.floor(pos / size);
-    const c = pos % size;
-    
-    // Attempt placing
+    const r = Math.floor(pos / size), c = pos % size;
     board[pos] = solver.currentNum;
     used[solver.currentNum] = true;
 
+    // Pruning (Skip for 'brute')
     let isValid = true;
     if (algoMode !== 'brute') {
         const checks = [
@@ -86,37 +73,73 @@ export function solveBacktrackStep(solver, size, algoMode) {
             const vals = line.map(i => board[i]).filter(v => v !== null);
             const s = vals.reduce((a, b) => a + b, 0);
             if (s > magicConst || (vals.length === size && s !== magicConst)) { 
-                isValid = false; 
-                break; 
+                isValid = false; break; 
             }
         }
     }
 
     if (isValid) {
-        const placedNum = solver.currentNum;
+        const placedVal = solver.currentNum;
         solver.currentNum++;
         return {
             board: reconstructBoard(board, size),
-            val: placedNum,
+            val: placedVal,
             highlight: { r, c, type: 'active' },
-            desc: `Placing ${placedNum} at (${r}, ${c})...`
+            desc: `Placing ${placedVal} at (${r}, ${c})...`
         };
     } else {
-        // Conflict - clear it and wait for next step
         board[pos] = null;
         used[solver.currentNum] = false;
         return {
             board: reconstructBoard(board, size),
             highlight: { r, c, type: 'backtrack' },
-            desc: `Conflict at (${r}, ${c})! ${solver.currentNum} violates magic sum.`
+            desc: `Conflict! ${solver.currentNum} at (${r}, ${c}) invalidates sum.`
         };
     }
 }
 
-function reconstructBoard(flatBoard, size) {
-    const board = [];
-    for (let i = 0; i < size; i++) {
-        board.push(flatBoard.slice(i * size, (i + 1) * size));
+function handleFailureAndBacktrack(solver, size, desc) {
+    const { board, used, stack } = solver;
+    stack[solver.currentNum] = null;
+    solver.currentNum--;
+    
+    if (solver.currentNum < 1) {
+        solver.currentNum = 1;
+        return { board: reconstructBoard(board, size), isComplete: true, desc: "Search exhausted." };
     }
-    return board;
+
+    const lastNumPos = board.indexOf(solver.currentNum);
+    return {
+        board: reconstructBoard(board, size),
+        highlight: lastNumPos !== -1 ? { r: Math.floor(lastNumPos/size), c: lastNumPos%size, type: 'backtrack' } : null,
+        desc: desc
+    };
+}
+
+function isActuallyMagic(board, size, magicConst) {
+    // Check Rows
+    for (let r = 0; r < size; r++) {
+        let sum = 0;
+        for (let c = 0; c < size; c++) sum += board[r * size + c];
+        if (sum !== magicConst) return false;
+    }
+    // Check Cols
+    for (let c = 0; c < size; c++) {
+        let sum = 0;
+        for (let r = 0; r < size; r++) sum += board[r * size + c];
+        if (sum !== magicConst) return false;
+    }
+    // Diagonals
+    let d1 = 0, d2 = 0;
+    for (let i = 0; i < size; i++) {
+        d1 += board[i * size + i];
+        d2 += board[i * size + (size - 1 - i)];
+    }
+    return d1 === magicConst && d2 === magicConst;
+}
+
+function reconstructBoard(flatBoard, size) {
+    const b = [];
+    for (let i = 0; i < size; i++) b.push(flatBoard.slice(i * size, (i + 1) * size));
+    return b;
 }
