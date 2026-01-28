@@ -16,12 +16,13 @@ export const MagicSquareCard = ({
   steps = [], 
   speed = 500,
   triggerRun = 0,
-  triggerReset = 0
+  triggerReset = 0,
+  onStatsUpdate // New prop for reporting live stats
 }) => {
   const {
     currentStepIndex, setCurrentStepIndex,
     isPlaying, setIsPlaying,
-    isComplete: gameIsComplete, // 이름을 변경하여 충돌 방지
+    isComplete: gameIsComplete,
     practiceBoard, targetNum,
     setFeedback,
     isSoundEnabled,
@@ -29,15 +30,31 @@ export const MagicSquareCard = ({
     stats,
     dynamicDesc,
     dynamicHighlight
-  } = useMagicSquareGame({ size, mainMode, algoMode, steps, speed, triggerRun, triggerReset });
+  } = useMagicSquareGame({ 
+    size, mainMode, algoMode, steps, speed, triggerRun, triggerReset,
+    onComplete: (finalStats) => {
+        // Report final completion stats
+        if (onStatsUpdate) onStatsUpdate({ stats: finalStats, isRunning: false, isDone: true });
+    }
+  });
 
   const currentStep = steps[currentStepIndex] || { board: [], desc: "" };
   const { highlight } = currentStep;
   
-  // Logic for completion
   const isComplete = mainMode === 'simulation' 
     ? ((algoMode === 'formula' || algoMode === 'swing') ? currentStep?.type === 'complete' : gameIsComplete) 
     : gameIsComplete;
+
+  // Report live stats changes
+  useEffect(() => {
+    if (onStatsUpdate && mainMode === 'simulation') {
+        onStatsUpdate({ 
+            stats, 
+            isRunning: isPlaying && !isComplete, 
+            isDone: isComplete 
+        });
+    }
+  }, [stats, isPlaying, isComplete, onStatsUpdate, mainMode]);
 
   const magicConstant = (size * (size * size + 1)) / 2;
 
