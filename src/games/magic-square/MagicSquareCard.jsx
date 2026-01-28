@@ -207,26 +207,24 @@ export const MagicSquareCard = ({
             );
           })}
         </div>
-           {/* Column Sums Row - Solid Blue Style (Restored from Git) */}
+        
           <div className={cn("flex items-center mt-1", getGapSize())}>
-            <div className="w-5 h-5 mr-1" /> {/* Spacer for Left Icon */}
+            <div className="w-5 h-5 mr-1 opacity-0" />
             {colSums.map((cs, i) => (
               <div 
                 key={`colsum-${i}`} 
                 className={cn(
-                  getCellSize(),
-                  "flex items-center justify-center rounded-md font-mono font-bold text-[10px] transition-all border",
-                  cs.isComplete 
-                    ? "bg-sky-700 text-white border-sky-600 shadow-sm" 
-                    : "bg-slate-700/40 text-slate-400 border-slate-600/30",
-                  (isComplete || cs.sum > 0) ? "opacity-100" : "opacity-0"
+                  "flex items-center justify-center font-mono font-bold transition-all duration-700",
+                  getCellSize(), 
+                  "text-[8px] h-5",
+                  cs.isComplete ? "text-sky-400" : "text-slate-600",
+                  isComplete ? "opacity-100" : "opacity-0"
                 )}
               >
-                {cs.sum > 0 ? cs.sum : '-'}
+                {cs.sum > 0 ? cs.sum : ''}
               </div>
             ))}
-            {/* Empty corner spacer */}
-            <div className={cn("ml-1", getCellSize())} />
+            <div className="w-5 h-5 ml-1" /> 
           </div>
       </div>
 
