@@ -1,6 +1,6 @@
 import React from 'react';
 import { BookOpen, RotateCcw, LayoutGrid, Zap, Sliders, Play, BrainCircuit, Square, Info, GraduationCap } from 'lucide-react';
-import { cn } from '../../utils/cn';
+import { cn } from "../../../utils/cn";
 
 export const MagicControlCard = ({ 
     selectedSize, 

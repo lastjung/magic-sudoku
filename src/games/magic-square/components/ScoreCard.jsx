@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Check } from 'lucide-react';
-import { cn } from '../../utils/cn';
+import { cn } from "../../../utils/cn";
 import { useMagicSquareGame } from '../useMagicSquareGame';
 
 export const ScoreCard = ({ algoId, size, triggerRun, triggerReset, speed, steps, onComplete }) => {
