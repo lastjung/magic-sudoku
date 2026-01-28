@@ -224,7 +224,18 @@ export const MagicSquareCard = ({
                 {cs.sum > 0 ? cs.sum : ''}
               </div>
             ))}
-            <div className="w-5 h-5 ml-1" /> 
+            {/* Main Diagonal Sum (Bottom-Right Corner) */}
+            <div className={cn(
+              "flex items-center justify-center font-mono font-bold w-5 h-5 ml-1 text-[8px] transition-all duration-700",
+              (displayBoard.reduce((acc, row, idx) => acc + (row && row[idx] ? row[idx] : 0), 0) === magicConstant && displayBoard.every((row, idx) => row && row[idx])) ? "text-sky-400" : "text-slate-600",
+              isComplete ? "opacity-100" : "opacity-0"
+            )}>
+               {/* Calc Main Diagonal Sum directly inline */}
+               {(() => {
+                  const diagSum = displayBoard.reduce((acc, row, idx) => acc + (row && row[idx] ? row[idx] : 0), 0);
+                  return diagSum > 0 ? diagSum : '';
+               })()}
+            </div>
           </div>
       </div>
 
