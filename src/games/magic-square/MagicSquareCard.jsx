@@ -139,7 +139,7 @@ export const MagicSquareCard = ({
 
   return (
     <div className={cn(
-      "bg-slate-800/40 backdrop-blur-md border rounded-xl p-1.5 flex flex-col shadow-xl transition-all group",
+      "bg-slate-800/40 backdrop-blur-md border rounded-xl p-1.5 flex flex-col shadow-xl transition-all group overflow-hidden",
       isComplete ? "border-emerald-500/30 bg-emerald-500/5 shadow-[0_0_20px_rgba(16,185,129,0.05)]" : "border-slate-700/50"
     )}>
       {/* Header */}
@@ -207,21 +207,27 @@ export const MagicSquareCard = ({
             );
           })}
         </div>
-        {/* Column Sums */}
-        <div className={cn("flex", getGapSize(), "mt-1")}>
-          <div className="w-5 h-5 mr-1 opacity-0" /> {/* Placeholder for row sum */}
-          {colSums.map((col, idx) => (
-            <div key={`col-sum-${idx}`} className={cn(
-              getCellSize(), // Use same width as cells
-              "flex items-center justify-center font-mono font-bold text-[10px] rounded-md transition-all",
-              col.isComplete ? "text-sky-400 bg-sky-500/10 border border-sky-500/20" : "text-slate-500 bg-slate-700/20 border border-slate-700/30",
-              (isComplete || col.sum > 0) ? "opacity-100" : "opacity-0"
-            )}>
-              {col.sum > 0 ? col.sum : ''}
-            </div>
-          ))}
-          <div className="w-5 h-5 ml-1 opacity-0" /> {/* Placeholder for row sum */}
-        </div>
+           {/* Column Sums Row - Solid Blue Style (Restored from Git) */}
+          <div className={cn("flex items-center mt-1", getGapSize())}>
+            <div className="w-5 h-5 mr-1" /> {/* Spacer for Left Icon */}
+            {colSums.map((cs, i) => (
+              <div 
+                key={`colsum-${i}`} 
+                className={cn(
+                  getCellSize(),
+                  "flex items-center justify-center rounded-md font-mono font-bold text-[10px] transition-all border",
+                  cs.isComplete 
+                    ? "bg-sky-700 text-white border-sky-600 shadow-sm" 
+                    : "bg-slate-700/40 text-slate-400 border-slate-600/30",
+                  (isComplete || cs.sum > 0) ? "opacity-100" : "opacity-0"
+                )}
+              >
+                {cs.sum > 0 ? cs.sum : '-'}
+              </div>
+            ))}
+            {/* Empty corner spacer */}
+            <div className={cn("ml-1", getCellSize())} />
+          </div>
       </div>
 
       {/* Footer Area */}
