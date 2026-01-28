@@ -163,8 +163,7 @@ export const MagicSquareCard = ({
                {!isPlaying ? (
                   <button onClick={() => {
                      if (isComplete) {
-                        resetPractice();
-                        setTimeout(() => setIsPlaying(true), 10);
+                        resetPractice(true); // Pass true to auto-play after reset
                      } else {
                         setIsPlaying(true);
                      }

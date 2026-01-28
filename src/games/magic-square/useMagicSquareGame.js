@@ -28,9 +28,17 @@ export const useMagicSquareGame = ({ size, mainMode, algoMode, steps, speed, tri
   const startTimeRef = useRef(0);
   const solverRef = useRef(null);
 
-  const resetPractice = useCallback(() => {
+  const resetPractice = useCallback((autoPlay = false) => {
     let initialBoard = Array.from({ length: size }, () => Array(size).fill(null));
     setIsComplete(false);
+    
+    // Auto-play control based on argument
+    if (autoPlay === true) {
+        setIsPlaying(true);
+    } else {
+        // Only stop if not auto-playing (default behavior)
+        setIsPlaying(false);
+    }
     
     if (algoMode === 'swing' && (size === 4 || size === 8)) {
         for (let r = 0; r < size; r++) {
@@ -51,6 +59,11 @@ export const useMagicSquareGame = ({ size, mainMode, algoMode, steps, speed, tri
     setDynamicHighlight(null);
     solverRef.current = null;
     startTimeRef.current = 0;
+    
+    // Re-init audio if auto-playing
+    if (autoPlay === true) {
+        audioEngine.init();
+    }
   }, [size, algoMode]);
 
   useEffect(() => {
