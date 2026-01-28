@@ -31,9 +31,9 @@ export function solveHeuristicStep(solver, size) {
     let currentFrame = stack[solver.filledCount];
     if (!currentFrame) {
         const emptyIndices = flatBoard.map((v, i) => v === null ? i : -1).filter(idx => idx !== -1);
-        if (emptyIndices.length === 0) return null;
+        if (emptyIndices.length === 0) return handleBacktrack(solver, size);
 
-        const cellIdx = emptyIndices[0]; // Simple heuristic for now, or match the one from dynamic if preferred
+        const cellIdx = emptyIndices[0]; 
         let forcedVal = null;
         
         const r_idx = Math.floor(cellIdx/size), c_idx = cellIdx % size;
@@ -55,24 +55,29 @@ export function solveHeuristicStep(solver, size) {
         stack[solver.filledCount] = currentFrame;
     }
 
-    const r = Math.floor(currentFrame.cellIdx/size), c = currentFrame.cellIdx % size;
     let numToTry = null;
-
     if (currentFrame.forcedVal !== null) {
         if (currentFrame.triedNum === 0) {
             numToTry = currentFrame.forcedVal;
             currentFrame.triedNum = 999;
-            return tryPlaceEffect(numToTry, currentFrame, solver, size, true);
+            const effect = tryPlaceEffect(numToTry, currentFrame, solver, size, true);
+            if (effect) return effect;
         }
     } else {
         numToTry = (currentFrame.triedNum === 0 ? 2 : currentFrame.triedNum + 1);
         while (numToTry <= size * size && used[numToTry]) numToTry++;
         currentFrame.triedNum = numToTry;
         if (numToTry <= size * size) {
-            return tryPlaceEffect(numToTry, currentFrame, solver, size, false);
+            const effect = tryPlaceEffect(numToTry, currentFrame, solver, size, false);
+            if (effect) return effect;
         }
     }
 
+    return handleBacktrack(solver, size);
+}
+
+function handleBacktrack(solver, size) {
+    const { flatBoard, used, stack } = solver;
     stack[solver.filledCount] = null;
     solver.filledCount--;
     if (solver.filledCount > 0) {
@@ -90,9 +95,11 @@ export function solveHeuristicStep(solver, size) {
         flatBoard[prev1] = null;
         used[1] = false;
         solver.firstPosIdx++;
-        if (solver.firstPosIdx >= solver.firstNumberPositions.length) return null;
+        if (solver.firstPosIdx >= solver.firstNumberPositions.length) {
+            return { board: reconstructBoard(flatBoard, size), isComplete: true, desc: "Search exhausted." };
+        }
         solver.filledCount = 0;
-        return solveHeuristicStep(solver, size);
+        return { board: reconstructBoard(flatBoard, size), desc: "Restarting from new position...", highlight: null };
     }
 }
 
@@ -125,7 +132,7 @@ function tryPlaceEffect(numToTry, currentFrame, solver, size, isForced) {
                 board: reconstructBoard(flatBoard, size),
                 val: numToTry,
                 highlight: { r, c, type: isForced ? 'forced' : 'active' },
-                desc: isForced ? `Logical constraint: This cell must be ${numToTry}.` : `Trying ${numToTry} at cell ${currentFrame.cellIdx}...`
+                desc: isForced ? `Logical constraint: This cell must be ${numToTry}.` : `Trying ${numToTry} at cell (${r}, ${c})...`
             };
         } else {
             flatBoard[currentFrame.cellIdx] = null;

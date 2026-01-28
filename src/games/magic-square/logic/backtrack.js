@@ -43,20 +43,19 @@ export function solveBacktrackStep(solver, size, algoMode) {
         const posToClear = board.lastIndexOf(solver.currentNum);
         if (posToClear !== -1) {
             board[posToClear] = null;
+            const targetVal = solver.currentNum;
             solver.currentNum--;
             return {
                 board: reconstructBoard(board, size),
                 highlight: { r: Math.floor(posToClear/size), c: posToClear%size, type: 'backtrack' },
-                desc: `Backtracking: Searching alternative for value ${solver.currentNum + 1}...`
+                desc: `Backtracking: No position works for ${targetVal}.`
             };
         }
         solver.currentNum--;
         if (solver.currentNum < 1) return { board: reconstructBoard(board, size), isComplete: true, desc: "No solution." };
-        return solveBacktrackStep(solver, size, algoMode);
+        // Return a state to keep the loop alive
+        return { board: reconstructBoard(board, size), desc: "Backtracking further...", highlight: null };
     }
-
-    const existingPos = board.indexOf(solver.currentNum);
-    if (existingPos !== -1) board[existingPos] = null;
 
     const pos = stackFrame.candidates[stackFrame.triedIndex];
     board[pos] = solver.currentNum;
@@ -98,6 +97,8 @@ export function solveBacktrackStep(solver, size, algoMode) {
 
 function reconstructBoard(flatBoard, size) {
     const board = [];
-    for (let i = 0; i < size; i++) board.push(flatBoard.slice(i * size, (i + 1) * size));
+    for (let i = 0; i < size; i++) {
+        board.push(flatBoard.slice(i * size, (i + 1) * size));
+    }
     return board;
 }

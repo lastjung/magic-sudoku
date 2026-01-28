@@ -6,7 +6,6 @@ export function solveDynamicStep(solver, size) {
         return { board: reconstructBoard(flatBoard, size), isComplete: true, desc: "Solution found!" };
     }
 
-    // Initialize first number (1) positions for faster search if not already set
     if (solver.firstNumberPositions.length === 0) {
         if (size === 3) solver.firstNumberPositions = [0, 1, 4];
         else if (size === 4) solver.firstNumberPositions = [0, 1, 5];
@@ -32,8 +31,9 @@ export function solveDynamicStep(solver, size) {
     let currentFrame = stack[solver.filledCount];
     if (!currentFrame) {
         const emptyIndices = flatBoard.map((v, i) => v === null ? i : -1).filter(idx => idx !== -1);
-        if (emptyIndices.length === 0) return null;
+        if (emptyIndices.length === 0) return handleBacktrack(solver, size);
 
+        // MRT (Minimum Remaining Values) Heuristic
         const candidates = emptyIndices.map(idx => {
             let totalFilled = 0;
             const r_idx = Math.floor(idx / size), c_idx = idx % size;
@@ -72,27 +72,32 @@ export function solveDynamicStep(solver, size) {
         stack[solver.filledCount] = currentFrame;
     }
 
-    const r = Math.floor(currentFrame.cellIdx/size), c = currentFrame.cellIdx % size;
     let numToTry = null;
-
     if (currentFrame.forcedVal !== null) {
         if (currentFrame.triedNum === 0) {
             numToTry = currentFrame.forcedVal;
             currentFrame.triedNum = 999;
-            return tryPlaceEffect(numToTry, currentFrame, solver, size, true);
+            const effect = tryPlaceEffect(numToTry, currentFrame, solver, size, true);
+            if (effect) return effect;
         }
     } else {
         numToTry = (currentFrame.triedNum === 0 ? 2 : currentFrame.triedNum + 1);
         while (numToTry <= size * size && used[numToTry]) numToTry++;
         currentFrame.triedNum = numToTry;
         if (numToTry <= size * size) {
-            return tryPlaceEffect(numToTry, currentFrame, solver, size, false);
+            const effect = tryPlaceEffect(numToTry, currentFrame, solver, size, false);
+            if (effect) return effect;
         }
     }
 
-    // Backtrack if no number worked
+    return handleBacktrack(solver, size);
+}
+
+function handleBacktrack(solver, size) {
+    const { flatBoard, used, stack } = solver;
     stack[solver.filledCount] = null;
     solver.filledCount--;
+    
     if (solver.filledCount > 0) {
         const prevFrame = stack[solver.filledCount];
         const prevVal = flatBoard[prevFrame.cellIdx];
@@ -104,16 +109,20 @@ export function solveDynamicStep(solver, size) {
             desc: `Backtracking: Removing ${prevVal} and searching alternatives...`
         };
     } else {
-        // Root backtrack: Move to next 1 position
         const prev1 = solver.firstNumberPositions[solver.firstPosIdx];
         flatBoard[prev1] = null;
         used[1] = false;
         solver.firstPosIdx++;
         if (solver.firstPosIdx >= solver.firstNumberPositions.length) {
-            return { board: reconstructBoard(flatBoard, size), isComplete: true, desc: "No more options." };
+            return { board: reconstructBoard(flatBoard, size), isComplete: true, desc: "Search exhausted. No solution found." };
         }
         solver.filledCount = 0;
-        return solveDynamicStep(solver, size);
+        // Immediate restart from next '1' position to avoid stuck UI
+        return {
+            board: reconstructBoard(flatBoard, size),
+            desc: "Restarting search from new position...",
+            highlight: null
+        };
     }
 }
 
@@ -146,7 +155,7 @@ function tryPlaceEffect(numToTry, currentFrame, solver, size, isForced) {
                 board: reconstructBoard(flatBoard, size),
                 val: numToTry,
                 highlight: { r, c, type: isForced ? 'forced' : 'active' },
-                desc: isForced ? `Logical inference: Only ${numToTry} is valid here.` : `Trying ${numToTry} at optimal cell (${r}, ${c})...`
+                desc: isForced ? `Logical inference: Only ${numToTry} is valid here.` : `Trying ${numToTry} at cell (${r}, ${c})...`
             };
         } else {
             flatBoard[currentFrame.cellIdx] = null;
@@ -154,11 +163,11 @@ function tryPlaceEffect(numToTry, currentFrame, solver, size, isForced) {
             return {
                 board: reconstructBoard(flatBoard, size),
                 highlight: { r, c, type: 'backtrack' },
-                desc: `Constraint violation: Conflict detected at (${r}, ${c})!`
+                desc: `Conflict at (${r}, ${c})! Value ${numToTry} violates constraints.`
             };
         }
     }
-    return null;
+    return null; 
 }
 
 function reconstructBoard(flatBoard, size) {
