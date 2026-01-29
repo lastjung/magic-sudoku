@@ -18,7 +18,7 @@ export const ScoreCard = ({ algoId, size, triggerRun, triggerReset, speed, steps
       backtrack: { name: 'Recursive Backtrack', desc: 'Classic recursive search', color: 'text-rose-400', bg: 'bg-rose-500' },
       brute: { name: 'Pure Brute Force', desc: 'Exhaustive permutation search', color: 'text-slate-400', bg: 'bg-slate-500' },
       formula: { name: 'Direct Formula', desc: 'Static magic square construction', color: 'text-yellow-400', bg: 'bg-yellow-500' },
-      swing: { name: 'Formula Swing', desc: '4x4 Rotation algorithm', color: 'text-sky-400', bg: 'bg-sky-500' }
+      swing: { name: 'Formula Swing', desc: 'Dynamic Matrix Rotation', color: 'text-sky-400', bg: 'bg-sky-500' }
     };
 
     const l = labels[algoId] || { name: algoId, desc: '', color: 'text-white', bg: 'bg-white' };
@@ -28,12 +28,15 @@ export const ScoreCard = ({ algoId, size, triggerRun, triggerReset, speed, steps
             "p-5 rounded-2xl border transition-all duration-500",
             isRunning ? "bg-slate-700/30 border-indigo-500/30 scale-105" : "bg-slate-900/40 border-white/5"
         )}>
-            <div className="flex justify-between items-start mb-4">
-                <div>
-                    <h5 className={cn("text-xs font-black uppercase tracking-widest mb-1", l.color)}>{l.name}</h5>
-                    <p className="text-[9px] text-slate-500 font-bold">{l.desc}</p>
+            <div className="flex justify-between items-start mb-6">
+                <div className="flex items-start gap-3">
+                    <div className={cn("w-1 h-8 rounded-full", l.bg)} />
+                    <div>
+                        <h5 className={cn("text-[10px] font-black uppercase tracking-[0.25em] mb-1.5", l.color)}>{l.name}</h5>
+                        <p className="text-[10px] text-slate-500 font-bold leading-tight">{l.desc}</p>
+                    </div>
                 </div>
-                {isDone && <Check size={14} className="text-emerald-500" />}
+                {isDone && <Check size={14} className="text-emerald-500 bg-emerald-500/10 rounded-full p-0.5" />}
             </div>
             
             <div className="grid grid-cols-2 gap-4">

@@ -22,17 +22,20 @@ export const MagicControlCard = ({
   const noneSelected = selectedAlgos.size === 0;
 
   return (
-    <div className="bg-slate-800/60 backdrop-blur-xl border border-emerald-500/30 rounded-xl p-4 flex flex-col gap-3 shadow-2xl relative overflow-hidden group h-full">
-      <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-transparent pointer-events-none" />
+    <div className="glass-panel rounded-2xl p-4 flex flex-col gap-4 shadow-2xl relative overflow-hidden group h-full">
+      <div className="absolute inset-0 bg-blueprint opacity-[0.03] pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent pointer-events-none" />
       
       {/* Header */}
-      <div className="flex items-center gap-2 mb-1">
-        <Zap size={16} className="text-amber-400 fill-amber-400/20" />
-        <h3 className="text-xs font-bold text-white uppercase tracking-widest">Lab Control</h3>
+      <div className="flex items-center gap-2.5 mb-1 relative z-10">
+        <div className="p-1.5 bg-amber-500/20 rounded-lg text-amber-400">
+          <Zap size={14} className="fill-amber-400/20" />
+        </div>
+        <h3 className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em]">Lab Control</h3>
       </div>
 
       {/* Main Mode Switcher */}
-      <div className="grid grid-cols-2 gap-1 p-1 bg-slate-900/50 rounded-lg border border-white/5">
+      <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-900/60 rounded-xl border border-white/5 relative z-10">
         {[
             { id: 'simulation', label: 'SIMULATION', icon: Zap },
             { id: 'practice', label: 'PRACTICE', icon: GraduationCap }
@@ -41,13 +44,13 @@ export const MagicControlCard = ({
                 key={m.id}
                 onClick={() => setMainMode(m.id)}
                 className={cn(
-                    "flex items-center justify-center gap-1.5 py-2 rounded-md text-[9px] font-black tracking-widest transition-all",
+                    "flex items-center justify-center gap-2 py-2.5 rounded-lg text-[9px] font-black tracking-[0.2em] transition-all",
                     mainMode === m.id 
-                    ? "bg-emerald-400/20 border border-emerald-400/30 text-emerald-300 shadow-lg shadow-emerald-500/10" 
+                    ? "bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 shadow-xl shadow-emerald-500/10" 
                     : "bg-transparent text-slate-500 hover:text-slate-400 hover:bg-white/5"
                 )}
             >
-                <m.icon size={11} /> {m.label}
+                <m.icon size={12} /> {m.label}
             </button>
         ))}
       </div>

@@ -135,8 +135,8 @@ export const useMagicSquareGame = ({ size, mainMode, algoMode, steps, speed, tri
           const step = steps[currentIndex];
           let delay = playbackDelay;
           if (size === 8 && step.type === 'setup') delay = Math.max(30, playbackDelay / 4);
-          if (step.type === 'highlight_targets') delay = 1000;
-          if (step.type === 'swing_rotating') delay = 3600;
+          if (step.type === 'highlight_targets') delay = 1500;
+          if (step.type === 'swing_rotating') delay = 4000;
           
           await new Promise(resolve => { timerRef.current = setTimeout(resolve, delay); });
           

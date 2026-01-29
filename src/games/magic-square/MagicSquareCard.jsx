@@ -139,39 +139,46 @@ export const MagicSquareCard = ({
 
   return (
     <div className={cn(
-      "bg-slate-800/40 backdrop-blur-md border rounded-xl p-1.5 flex flex-col shadow-xl transition-all group overflow-hidden",
-      isComplete ? "border-emerald-500/30 bg-emerald-500/5 shadow-[0_0_20px_rgba(16,185,129,0.05)]" : "border-slate-700/50"
+      "glass-panel rounded-2xl p-3 flex flex-col shadow-2xl transition-all group overflow-hidden relative",
+      isComplete ? "border-emerald-500/30 bg-emerald-500/5 shadow-[0_0_30px_rgba(16,185,129,0.1)]" : "border-slate-700/50"
     )}>
+      <div className="absolute inset-0 bg-blueprint opacity-[0.03] pointer-events-none" />
       {/* Header */}
       <div className="flex justify-between items-center mb-1.5 min-h-[28px]">
-        <div className="flex items-center gap-2">
-            {algoMode === 'dynamic' ? <BrainCircuit size={14} className="text-emerald-400/60" /> : <Zap size={14} className="text-emerald-400/60" />}
-            <h3 className="text-xs font-bold uppercase tracking-widest text-emerald-400/50">
+        <div className="flex items-center gap-2.5">
+            <div className={cn(
+              "p-1.5 rounded-lg",
+              isComplete ? "bg-emerald-500/20 text-emerald-400" : "bg-slate-700/40 text-slate-400"
+            )}>
+              {algoMode === 'dynamic' ? <BrainCircuit size={14} /> : <Zap size={14} />}
+            </div>
+            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-300">
                 {mainMode === 'simulation' ? algoMode : `${size}x${size} Practice`}
             </h3>
         </div>
         
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-2">
            {mainMode === 'simulation' && (
              <>
                <button 
                  onClick={resetPractice}
-                 className="p-1.5 rounded-lg bg-slate-700/30 text-slate-500 hover:text-emerald-400 border border-white/5 transition-all active:scale-95 mr-1"
+                 className="p-1.5 rounded-lg bg-slate-800/60 text-slate-500 hover:text-emerald-400 border border-white/5 transition-all active:scale-95 group/btn"
+                 title="Reset"
                >
-                 <RefreshCw size={13} />
+                 <RefreshCw size={14} className="group-hover/btn:rotate-180 transition-transform duration-500" />
                </button>
                {!isPlaying ? (
                   <button onClick={() => {
                      if (isComplete) {
-                        resetPractice(true); // Pass true to auto-play after reset
+                        resetPractice(true);
                      } else {
                         setIsPlaying(true);
                      }
-                   }} className="p-1.5 rounded-lg bg-emerald-400/10 text-emerald-400/60 hover:bg-emerald-400/20 border border-emerald-500/10 transition-all active:scale-95">
+                   }} className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/20 transition-all active:scale-95 shadow-lg shadow-emerald-500/10">
                     <Play size={14} fill="currentColor" />
                   </button>
                ) : (
-                  <button onClick={() => setIsPlaying(false)} className="p-1.5 rounded-lg bg-rose-500/20 text-rose-400 hover:bg-rose-500/30 transition-all active:scale-95 border border-rose-500/20">
+                  <button onClick={() => setIsPlaying(false)} className="p-1.5 rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 transition-all active:scale-95 border border-rose-500/20 shadow-lg shadow-rose-500/10">
                     <Pause size={14} fill="currentColor" />
                   </button>
                )}
@@ -247,29 +254,30 @@ export const MagicSquareCard = ({
 
       {/* Footer Area */}
       {mainMode === 'simulation' && (
-        <div className="flex flex-col mt-1">
-            <div className="h-10 flex items-center justify-center mb-1 px-4 bg-slate-900/60 rounded-lg border border-amber-500/20 shadow-inner">
-                <span className="text-[12px] font-black uppercase tracking-wider text-center text-amber-400">
-                    {(algoMode !== 'formula' && algoMode !== 'swing') ? (dynamicDesc || "Ready...") : (currentStep?.desc || (isComplete ? 'Simulation Finished' : 'Solving...'))}
+        <div className="flex flex-col mt-3 gap-2 relative z-10">
+            <div className="h-12 flex items-center justify-center px-4 bg-slate-950/60 rounded-xl border border-white/5 shadow-inner overflow-hidden relative">
+                <div className="absolute inset-0 bg-blue-500/5 transition-colors duration-500 group-hover:bg-blue-500/10" />
+                <span className="text-[11px] font-black uppercase tracking-widest text-center text-slate-300 relative z-10 leading-snug">
+                    {(algoMode !== 'formula' && algoMode !== 'swing') ? (dynamicDesc || "Ready for Simulation") : (currentStep?.desc || (isComplete ? 'Analysis Finished' : 'Processing Logic...'))}
                 </span>
             </div>
 
-            <div className="grid grid-cols-4 gap-2 py-2 border-t border-slate-700/50">
-                <div className="flex flex-col items-center">
-                  <Activity size={14} className="text-rose-400 mb-1" />
-                  <span className="text-sm font-mono text-slate-200">{stats?.attempts || 0}</span>
+            <div className="grid grid-cols-4 gap-1 p-2 bg-slate-900/40 rounded-xl border border-white/5">
+                <div className="flex flex-col items-center justify-center py-1 rounded-lg hover:bg-white/5 transition-colors cursor-help group/stat">
+                  <Activity size={12} className="text-slate-500 group-hover/stat:text-rose-400 mb-1 transition-colors" />
+                  <span className="text-[10px] font-mono font-bold text-slate-300">{stats?.attempts || 0}</span>
                 </div>
-                <div className="flex flex-col items-center">
-                  <Trophy size={14} className="text-emerald-400 mb-1" />
-                  <span className="text-sm font-mono text-emerald-200">{progressPercent}%</span>
+                <div className="flex flex-col items-center justify-center py-1 rounded-lg hover:bg-white/5 transition-colors cursor-help group/stat">
+                  <Trophy size={12} className="text-slate-500 group-hover/stat:text-emerald-400 mb-1 transition-colors" />
+                  <span className="text-[10px] font-mono font-bold text-emerald-400">{progressPercent}%</span>
                 </div>
-                <div className="flex flex-col items-center">
-                  <Hash size={14} className="text-amber-400 mb-1" />
-                  <span className="text-sm font-mono text-slate-200">{magicConstant}</span>
+                <div className="flex flex-col items-center justify-center py-1 rounded-lg hover:bg-white/5 transition-colors cursor-help group/stat">
+                  <Hash size={12} className="text-slate-500 group-hover/stat:text-amber-400 mb-1 transition-colors" />
+                  <span className="text-[10px] font-mono font-bold text-slate-300">{magicConstant}</span>
                 </div>
-                <div className="flex flex-col items-center">
-                  <Clock size={14} className="text-sky-400 mb-1" />
-                  <span className="text-sm font-mono text-slate-200">{(stats?.time / 1000 || 0).toFixed(2)}s</span>
+                <div className="flex flex-col items-center justify-center py-1 rounded-lg hover:bg-white/5 transition-colors cursor-help group/stat">
+                  <Clock size={12} className="text-slate-500 group-hover/stat:text-sky-400 mb-1 transition-colors" />
+                  <span className="text-[10px] font-mono font-bold text-slate-300">{(stats?.time / 1000 || 0).toFixed(2)}s</span>
                 </div>
             </div>
         </div>

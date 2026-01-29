@@ -63,8 +63,8 @@ export const MagicCell = ({
   }
 
   if (isSwingTarget8 && (currentStep?.type === 'highlight_targets' || currentStep?.type === 'swing_rotating' || isComplete)) {
-    const w = 38;
-    const g = 4;
+    const w = 32; // w-8 = 32px
+    const g = 4;  // gap-1 = 4px
     const stride = w + g;
     const offsetX = (3.5 - c) * stride;
     const offsetY = (3.5 - r) * stride;
@@ -80,7 +80,7 @@ export const MagicCell = ({
       ...(currentStep?.type === 'swing_rotating' ? {
         transformOrigin: `${originX}% ${originY}%`,
         transform: 'rotate(180deg)',
-        transition: 'transform 3.6s cubic-bezier(0.4, 0, 0.2, 1)',
+        transition: 'transform 3.8s cubic-bezier(0.34, 1.56, 0.64, 1)',
       } : {
         transform: 'none',
         transition: isComplete ? 'none' : 'background-color 1s ease-in-out, border-color 1s ease-in-out, box-shadow 1s ease-in-out'
@@ -151,7 +151,7 @@ export const MagicCell = ({
             cn(
                 "z-40 transition-all duration-1000 ease-in-out",
                 currentStep?.type === 'swing_prepare' ? (
-                    "scale-110 shadow-[0_0_30px_rgba(56,189,248,0.6)] border-sky-400 bg-sky-500/40 text-white"
+                    "scale-110 shadow-[0_0_30px_rgba(56,189,248,0.6)] border-sky-400 bg-sky-500/40 text-white animate-cyber-pulse"
                 ) : "",
                 currentStep?.type === 'swing_done' ? (
                     "scale-100 rotate-y-180 bg-indigo-500/70 border-indigo-300 text-white shadow-[0_0_40px_rgba(99,102,241,0.7)] ring-2 ring-indigo-400/50"
@@ -161,12 +161,12 @@ export const MagicCell = ({
         
         algoMode === 'swing' && currentStep?.type === 'scan_swing' && (
              highlight?.targets?.some(t => t.r === r && t.c === c)
-               ? "ring-2 ring-sky-400/50 shadow-[0_0_20px_rgba(56,189,248,0.3)] bg-sky-900/60 text-sky-100 z-10"
+               ? "ring-2 ring-sky-400/50 shadow-[0_0_25px_rgba(34,211,238,0.4)] bg-sky-900/80 text-cyan-300 z-10 border-cyan-500/50"
                : "opacity-30 grayscale-[0.8]"
         ),
         algoMode === 'swing' && currentStep?.type === 'highlight_targets' &&
         highlight?.targets?.some(t => t.r === r && t.c === c) && (
-            "bg-blue-600 text-white z-10"
+            "bg-blue-600/80 text-white z-10 shadow-[0_0_30px_rgba(37,99,235,0.6)] border-blue-400 animate-cyber-pulse ring-2 ring-blue-300"
         ),
 
         // 6x6 Highlight Quadrant
