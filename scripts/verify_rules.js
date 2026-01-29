@@ -1,6 +1,6 @@
 
-import { generateMagicSquareSteps } from './src/games/magic-square/logic.js';
-import rulesData from './src/games/magic-square/rules.json' assert { type: "json" };
+import { generateMagicSquareSteps } from '../src/games/magic-square/logic.js';
+import rulesData from '../src/games/magic-square/rules.json' with { type: "json" };
 
 const SIZES_TO_TEST = [3, 5, 7]; // Test Odd sizes
 

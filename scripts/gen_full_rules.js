@@ -1,9 +1,9 @@
 
-import { generateMagicSquareSteps } from './src/games/magic-square/logic.js';
+import { generateMagicSquareSteps } from '../src/games/magic-square/logic.js';
 import fs from 'fs';
 
 const SIZES = [3, 4, 5, 6, 7, 8, 9, 10];
-const OUTPUT_FILE = './src/games/magic-square/rules.json';
+const OUTPUT_FILE = '../src/games/magic-square/rules.json';
 
 const ICON_MAP = {
     // Siamese (Odd)

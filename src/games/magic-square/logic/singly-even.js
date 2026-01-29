@@ -1,4 +1,4 @@
-import { MagicSquareOdd } from './odd';
+import { MagicSquareOdd } from './odd.js';
 
 export function generateSinglyEvenSteps(n) {
     const half = n / 2;

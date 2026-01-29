@@ -1,8 +1,8 @@
-import { MagicSquareSwing } from './swing';
+import { MagicSquareSwing } from './swing.js';
 // Other imports (simplified for the fix)
-import { MagicSquareOdd } from './odd';
-import { MagicSquareDoublyEven } from './doubly-even';
-import { generateSinglyEvenSteps } from './singly-even';
+import { MagicSquareOdd } from './odd.js';
+import { MagicSquareDoublyEven } from './doubly-even.js';
+import { generateSinglyEvenSteps } from './singly-even.js';
 
 export function generateMagicSquareSteps(n, algoMode = 'formula') {
   // Case 0: Swing Mode - Support 4x4 and 8x8

@@ -1,5 +1,5 @@
 
-import { generateMagicSquareSteps } from './src/games/magic-square/logic.js';
+import { generateMagicSquareSteps } from '../src/games/magic-square/logic.js';
 
 // User's Golden Standard for 3x3 style
 const STYLE_MAP = {
