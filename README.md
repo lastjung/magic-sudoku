@@ -1,22 +1,48 @@
-# SortCompare — Sorting Algorithm Visualizer & Benchmarking Tool
+# Magic Sudoku Lab — Algorithm Visualization & Benchmarking Lab
 
-SortCompare is a high-performance, aesthetically pleasing web application built with **React 19** and **Vite**, designed to visualize and compare the performance of various sorting algorithms in real-time.
+**Magic Sudoku Lab** is a high-performance, aesthetically pleasing web application built with **React 19** and **Vite**, designed to visualize and compare complex algorithms in real-time.
 
-![Preview](https://raw.githubusercontent.com/lucide-react/lucide/main/icons/zap.svg) <!-- Replace with a real screenshot if available -->
+[![GitHub Portfolio](https://img.shields.io/badge/GitHub-Portfolio-blue?style=for-the-badge&logo=github)](https://github.com/lastjung/magic-sudoku)
+[![Live Demo](https://img.shields.io/badge/Live-Demo-emerald?style=for-the-badge&logo=googlechrome)](https://lastjung.github.io/magic-sudoku/)
 
-## ✨ Features
+## 🧪 The Three Laboratories
 
-- **Real-time Visualization**: Watch sorting algorithms in action with smooth, high-frame-rate animations using CSS and Framer Motion.
-- **Performance Benchmarking**: Automatically tracks and displays comparisons, swaps, and total execution time for each algorithm.
-- **Audio Feedback**: Includes an interactive audio engine that plays unique tones based on the values being sorted, providing a multi-sensory learning experience.
-- **Multi-Algorithm Comparison**: Run up to 8 different algorithms simultaneously to see how they perform side-by-side.
-- **Responsive Design**: Desktop control panel with sliders, plus mobile-friendly bottom drawer on tablets and phones.
-- **Scoreboard Ranking**: Post-completion dashboard with medal rankings (🥇🥈🥉), percentage comparison, and time complexity display.
+### 1. Magic Square Laboratory [▶ Explore Live](https://lastjung.github.io/magic-sudoku/magic)
+
+Explore the mathematical beauty of Magic Squares. This lab supports sizes from 3x3 to 10x10 and visualizes various construction algorithms.
+
+- **Algorithms**: Swing mode, Direct Formula, CSP Solver, Backtracking, and more.
+- **Interactive Controls**: Adjust grid size, algorithm mode, and simulation speed.
+- **Analysis**: Step-by-step logic visualization and performance tracking.
+
+### 2. Sudoku Optimization Lab [▶ Explore Live](https://lastjung.github.io/magic-sudoku/sudoku)
+
+Analyze the efficiency of different Sudoku solving strategies using Constraint Satisfaction Problem (CSP) heuristics.
+
+- **Solver Comparison**: Compare **Backtracking**, **Naked Single**, and **Full CSP Solver** side-by-side.
+- **Solving Metrics**: Tracks steps, progress percentage, and solving time.
+- **Configurable Difficulty**: Generate puzzles from Easy to Hard in 4x4 or 9x9 formats.
+
+### 3. Sorting Laboratory [▶ Explore Live](https://lastjung.github.io/magic-sudoku/sorting)
+
+Visualize classic sorting algorithms with high-fidelity animations and auditory feedback.
+
+- **8 Supported Algorithms**: Bubble, Selection, Insertion, Quick, Merge, Heap, Shell, and Cocktail Sort.
+- **Benchmarking**: Real-time tracking of comparisons, swaps, and execution time.
+- **Audio Engine**: Interactive multi-sensory experience using Web Audio API.
+
+## ✨ Core Features
+
+- **Real-time Visualization**: Smooth, high-frame-rate animations using CSS and Framer Motion.
+- **Performance Benchmarking**: Integrated scoreboard for algorithm performance comparison.
+- **Multi-Algorithm Mode**: Run multiple algorithms simultaneously for direct benchmarking.
+- **Responsive Design**: Modern Glassmorphism UI optimized for both Desktop and Mobile devices.
 
 ## 🛠 Tech Stack
 
 - **Framework**: [React 19](https://react.dev/)
-- **Build Tool**: [Vite](https://vitejs.dev/)
+- **Routing**: [React Router 7](https://reactrouter.com/)
+- **Build Tool**: [Vite 7](https://vitejs.dev/)
 - **Styling**: [Tailwind CSS v4](https://tailwindcss.com/)
 - **Animations**: [Framer Motion](https://www.framer.com/motion/)
 - **Icons**: [Lucide React](https://lucide.dev/)
@@ -24,56 +50,33 @@ SortCompare is a high-performance, aesthetically pleasing web application built 
 
 ## 🚀 Getting Started
 
-### Prerequisites
-
-- Node.js (v18.0.0 or higher)
-- npm or yarn
-
 ### Installation
 
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/your-username/sort-compare.git
-   cd sort-compare
+   git clone https://github.com/lastjung/magic-sudoku.git
+   cd magic-sudoku
    ```
 
 2. Install dependencies:
 
    ```bash
-   npm install
+   pnpm install
    ```
 
 3. Start the development server:
-
    ```bash
    npm run dev
    ```
 
-4. Build for production:
-   ```bash
-   npm run build
-   ```
-
-## 🧠 Supported Algorithms (8 Total)
-
-| Algorithm      | Complexity | Description                                      |
-| -------------- | ---------- | ------------------------------------------------ |
-| Bubble Sort    | O(n²)      | Classic comparison sort, swaps adjacent elements |
-| Selection Sort | O(n²)      | Finds minimum and moves to sorted portion        |
-| Insertion Sort | O(n²)      | Builds sorted array one element at a time        |
-| Quick Sort     | O(n log n) | Divide-and-conquer using pivot partitioning      |
-| Merge Sort     | O(n log n) | Stable divide-and-conquer with merging           |
-| Heap Sort      | O(n log n) | Uses max-heap data structure                     |
-| Shell Sort     | O(n log n) | Gap-based insertion sort variant                 |
-| Cocktail Sort  | O(n²)      | Bidirectional bubble sort                        |
-
 ## 📂 Project Structure
 
-- `src/algorithms/`: Implementation of core sorting logic.
-- `src/components/`: Reusable UI components (Dashboard, SortCard, ControlPanel, etc.).
-- `src/hooks/`: Custom React hooks for sorting state and engine logic.
-- `src/utils/`: Audio engine and data generation utilities.
+- `src/games/magic-square/`: Magic Square logic and components.
+- `src/games/sudoku/`: Sudoku solvers and grid components.
+- `src/algorithms/`: Core sorting algorithm implementations.
+- `src/hooks/`: Custom state management and engine hooks.
+- `src/components/`: Shared UI components and layout.
 
 ## 📄 License
 
@@ -81,4 +84,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-Built with ❤️ by [Eric](https://github.com/eric)
+Built with ❤️ by [lastjung](https://github.com/lastjung)

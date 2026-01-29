@@ -64,7 +64,7 @@ const ALGORITHMS = [
   },
 ];
 
-export const Dashboard = ({ data, speed, setSpeed, arraySize, setArraySize, onRandomize }) => {
+const Dashboard = ({ data, speed, setSpeed, arraySize, setArraySize, onRandomize }) => {
   const [selectedIds, setSelectedIds] = useState(new Set(ALGORITHMS.map(a => a.id)));
   const [triggerMap, setTriggerMap] = useState({});
   const [activeIds, setActiveIds] = useState(new Set());
@@ -223,3 +223,6 @@ export const Dashboard = ({ data, speed, setSpeed, arraySize, setArraySize, onRa
     </div>
   );
 };
+
+export default Dashboard;
+

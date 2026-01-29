@@ -20,6 +20,7 @@ export const useSorting = (initialArray, sortingAlgorithm, speed, triggerRun, tr
 
   useEffect(() => {
     maxValRef.current = Math.max(...initialArray, 1);
+    
     // Sync array with new initialArray when not running
     if (!isRunning) {
       setArray([...initialArray]);
@@ -28,8 +29,8 @@ export const useSorting = (initialArray, sortingAlgorithm, speed, triggerRun, tr
       setSwapping([]);
       setStats({ comparisons: 0, swaps: 0, time: 0 });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialArray]);
+  }, [initialArray, isRunning]); // added isRunning to deps to be explicit, though it's used inside
+
 
   const dynamicSleep = useCallback(() => new Promise(resolve => setTimeout(resolve, 1001 - speedRef.current)), []);
 
