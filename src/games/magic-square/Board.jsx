@@ -175,6 +175,7 @@ export default function MagicSquareBoard({ speed }) {
                     speed={speed}
                     triggerRun={triggerRun}
                     triggerReset={triggerReset}
+                    onComplete={(s) => handleAlgoComplete(item.algoId, s)}
                 />
             )
         ))}

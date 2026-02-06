@@ -17,7 +17,8 @@ export const MagicSquareCard = ({
   steps = [], 
   speed = 500,
   triggerRun = 0,
-  triggerReset = 0
+  triggerReset = 0,
+  onComplete
 }) => {
   const {
     currentStepIndex, setCurrentStepIndex,
@@ -30,7 +31,7 @@ export const MagicSquareCard = ({
     stats,
     dynamicDesc,
     dynamicHighlight
-  } = useMagicSquareGame({ size, mainMode, algoMode, steps, speed, triggerRun, triggerReset });
+  } = useMagicSquareGame({ size, mainMode, algoMode, steps, speed, triggerRun, triggerReset, onComplete });
 
   const currentStep = steps[currentStepIndex] || { board: [], desc: "" };
   

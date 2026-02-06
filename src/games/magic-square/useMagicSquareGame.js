@@ -75,10 +75,11 @@ export const useMagicSquareGame = ({ size, mainMode, algoMode, steps, speed, tri
   useEffect(() => {
     if (triggerRun > lastTriggerRun.current) {
         lastTriggerRun.current = triggerRun;
-        setIsPlaying(true);
-        audioEngine.init();
+        // Reset and auto-play instead of just setting isPlaying
+        // This ensures isComplete is cleared before starting
+        resetPractice(true);
     }
-  }, [triggerRun]);
+  }, [triggerRun, resetPractice]);
 
   const lastTriggerReset = useRef(0);
   useEffect(() => {
