@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Play, Pause, RefreshCw, ChevronLeft, ChevronRight, SkipBack, SkipForward,
   CheckCircle2, Target, Zap,
@@ -21,7 +22,7 @@ export const MagicSquareCard = ({
   const {
     currentStepIndex, setCurrentStepIndex,
     isPlaying, setIsPlaying,
-    isComplete: gameIsComplete, // 이름을 변경하여 충돌 방지
+    isComplete: gameIsComplete,
     practiceBoard, targetNum,
     setFeedback,
     isSoundEnabled,
@@ -32,14 +33,32 @@ export const MagicSquareCard = ({
   } = useMagicSquareGame({ size, mainMode, algoMode, steps, speed, triggerRun, triggerReset });
 
   const currentStep = steps[currentStepIndex] || { board: [], desc: "" };
-  const { highlight } = currentStep;
   
-  // Logic for completion
+  // Logic for completion - Move up to avoid TDZ
   const isComplete = mainMode === 'simulation' 
     ? ((algoMode === 'formula' || algoMode === 'swing') ? currentStep?.type === 'complete' : gameIsComplete) 
     : gameIsComplete;
 
   const magicConstant = (size * (size * size + 1)) / 2;
+
+  const [showCelebration, setShowCelebration] = useState(false);
+
+  // Auto-show and hide celebration with specific timing:
+  // Show after 1s, stay for 1s, then hide (fade out).
+  useEffect(() => {
+    if (isComplete) {
+      const showTimer = setTimeout(() => setShowCelebration(true), 1000);
+      const hideTimer = setTimeout(() => setShowCelebration(false), 3000);
+      return () => {
+        clearTimeout(showTimer);
+        clearTimeout(hideTimer);
+      };
+    } else {
+      setShowCelebration(false);
+    }
+  }, [isComplete]);
+
+  const { highlight } = currentStep;
 
   // Sync board for Formula/Swing Mode
   const displayBoard = (mainMode === 'simulation' && (algoMode === 'formula' || algoMode === 'swing') && (isPlaying || isComplete || currentStepIndex > 0) && currentStep?.board?.length > 0) 
@@ -189,36 +208,98 @@ export const MagicSquareCard = ({
 
       {/* Board */}
       <div className={cn("flex flex-col items-center justify-center relative px-2 flex-1 transition-all duration-500", size > 7 ? "py-6" : "py-3")}>
-        <div className="flex flex-col gap-1">
-          {displayBoard.map((row, r) => {
-            const rowSum = row ? row.reduce((a, b) => a + (b || 0), 0) : 0;
-            const isRowComplete = rowSum === magicConstant && row && row.every(v => v !== null);
-            const cellSizeClass = getCellSize();
+        
+        {/* Celebration Overlay - Centered on Grid */}
+        <div className="relative">
+          <AnimatePresence>
+            {showCelebration && (
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.8, ease: "easeInOut" }}
+                className="absolute inset-[-8px] z-30 flex items-center justify-center cursor-pointer overflow-hidden rounded-xl"
+                onClick={() => setShowCelebration(false)}
+              >
+                {/* Visual Backdrop */}
+                <motion.div 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="absolute inset-0 bg-slate-950/85 backdrop-blur-[6px] border border-emerald-500/30"
+                />
 
-            return (
-              <div key={`row-${r}`} className={cn("flex items-center", getGapSize())}>
-                <div className="w-5 h-5 mr-1 opacity-0" />
-                {row && row.map((v, c) => (
-                  <MagicCell
-                    key={`${r}-${c}`}
-                    v={v} r={r} c={c} size={size}
-                    algoMode={algoMode}
-                    mainMode={mainMode}
-                    isComplete={isComplete}
-                    isPlaying={isPlaying}
-                    currentStep={currentStep}
-                    dynamicHighlight={dynamicHighlight}
-                    onClick={() => mainMode === 'practice' && onCellClick(r, c)}
-                    cellClasses={cellSizeClass}
-                    getFormulaColor={getFormulaColor}
-                  />
-                ))}
-                <div className={cn("flex items-center justify-center font-mono font-bold w-5 h-5 ml-1 text-[8px]", isRowComplete ? "text-sky-400" : "text-slate-600", isComplete ? "opacity-100" : "opacity-0")}>
-                  {rowSum > 0 ? rowSum : ''}
+                {/* Content */}
+                <motion.div 
+                  initial={{ scale: 0.8, opacity: 0, y: 15 }}
+                  animate={{ scale: 1, opacity: 1, y: 0 }}
+                  exit={{ scale: 0.85, opacity: 0, y: -10 }}
+                  transition={{ duration: 0.6, delay: 0.1 }}
+                  className="relative flex flex-col items-center gap-3 p-4 w-full"
+                >
+                  <motion.div 
+                    animate={{ y: [0, -5, 0] }}
+                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                    className="bg-gradient-to-br from-amber-400 to-orange-600 p-3 rounded-2xl shadow-[0_0_20px_rgba(245,158,11,0.5)]"
+                  >
+                    <Trophy size={size > 6 ? 40 : 32} className="text-white" fill="rgba(255,255,255,0.2)" />
+                  </motion.div>
+                  
+                  <div className="space-y-1 text-center">
+                    <h4 className="text-lg font-black text-white tracking-[0.2em] leading-none uppercase drop-shadow-lg">
+                      COMPLETE
+                    </h4>
+                    <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-[0.3em] opacity-80">
+                      SUM: {magicConstant}
+                    </p>
+                  </div>
+
+                  <div className="flex gap-4 mt-1">
+                     <div className="text-center">
+                        <p className="text-[8px] font-bold text-slate-500 uppercase tracking-tighter">Time</p>
+                        <p className="text-sm font-mono font-black text-emerald-300">{(stats?.time / 1000 || 0).toFixed(2)}s</p>
+                     </div>
+                     <div className="text-center">
+                        <p className="text-[8px] font-bold text-slate-500 uppercase tracking-tighter">Steps</p>
+                        <p className="text-sm font-mono font-black text-emerald-300">{stats?.attempts || 0}</p>
+                     </div>
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <div className="flex flex-col gap-1">
+            {displayBoard.map((row, r) => {
+              const rowSum = row ? row.reduce((a, b) => a + (b || 0), 0) : 0;
+              const isRowComplete = rowSum === magicConstant && row && row.every(v => v !== null);
+              const cellSizeClass = getCellSize();
+
+              return (
+                <div key={`row-${r}`} className={cn("flex items-center", getGapSize())}>
+                  <div className="w-5 h-5 mr-1 opacity-0" />
+                  {row && row.map((v, c) => (
+                    <MagicCell
+                      key={`${r}-${c}`}
+                      v={v} r={r} c={c} size={size}
+                      algoMode={algoMode}
+                      mainMode={mainMode}
+                      isComplete={isComplete}
+                      isPlaying={isPlaying}
+                      currentStep={currentStep}
+                      dynamicHighlight={dynamicHighlight}
+                      onClick={() => mainMode === 'practice' && onCellClick(r, c)}
+                      cellClasses={cellSizeClass}
+                      getFormulaColor={getFormulaColor}
+                    />
+                  ))}
+                  <div className={cn("flex items-center justify-center font-mono font-bold w-5 h-5 ml-1 text-[8px]", isRowComplete ? "text-sky-400" : "text-slate-600", isComplete ? "opacity-100" : "opacity-0")}>
+                    {rowSum > 0 ? rowSum : ''}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
         
           <div className={cn("flex items-center mt-1", getGapSize())}>
@@ -237,13 +318,11 @@ export const MagicSquareCard = ({
                 {cs.sum > 0 ? cs.sum : ''}
               </div>
             ))}
-            {/* Main Diagonal Sum (Bottom-Right Corner) */}
             <div className={cn(
               "flex items-center justify-center font-mono font-bold w-5 h-5 ml-1 text-[8px] transition-all duration-700",
               (displayBoard.reduce((acc, row, idx) => acc + (row && row[idx] ? row[idx] : 0), 0) === magicConstant && displayBoard.every((row, idx) => row && row[idx])) ? "text-sky-400" : "text-slate-600",
               isComplete ? "opacity-100" : "opacity-0"
             )}>
-               {/* Calc Main Diagonal Sum directly inline */}
                {(() => {
                   const diagSum = displayBoard.reduce((acc, row, idx) => acc + (row && row[idx] ? row[idx] : 0), 0);
                   return diagSum > 0 ? diagSum : '';
