@@ -94,7 +94,7 @@ export const MagicCell = ({
     const isCorner = (r===0 || r===size-1) && (c===0 || c===size-1);
     const isCenter = r === Math.floor(size/2) && c === Math.floor(size/2);
     if (isCorner || isCenter) {
-      successBorder = "border-2 border-amber-400/80";
+      successBorder = "border border-amber-400/80";
       successColor = "text-white";
     } else if (c === Math.floor(size/2)) {
       successColor = "text-pink-300 bg-pink-900/20";
@@ -110,10 +110,10 @@ export const MagicCell = ({
       onClick={onClick}
       style={{ ...cellStyle, ...swingStyle }}
       className={cn(
-        "flex items-center justify-center rounded-md font-black transition-all relative overflow-hidden",
+        "flex items-center justify-center rounded-md font-normal transition-all relative overflow-hidden",
         cellClasses,
         v ? (+v > 0 ? (isComplete ? "" : "text-emerald-50") : "text-transparent") : "text-transparent",
-        isFormula ? "border-2" : (
+        isFormula ? "border" : (
           !isComplete && v ? "bg-emerald-900/40 border border-emerald-500/20" : (!isComplete && "bg-slate-800/50 border border-slate-700/30")
         ),
         isFormula && !v && !isComplete && "bg-slate-900/60 border-emerald-500/10 border-dashed",

@@ -227,7 +227,7 @@ export const MagicSquareCard = ({
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="absolute inset-0 bg-slate-950/85 backdrop-blur-[6px] border border-emerald-500/30"
+                  className="absolute inset-0 bg-slate-950/85 border border-emerald-500/30"
                 />
 
                 {/* Content */}
@@ -241,7 +241,7 @@ export const MagicSquareCard = ({
                   <motion.div 
                     animate={{ y: [0, -5, 0] }}
                     transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                    className="bg-gradient-to-br from-amber-400 to-orange-600 p-3 rounded-2xl shadow-[0_0_20px_rgba(245,158,11,0.5)]"
+                    className="bg-gradient-to-br from-purple-400 to-violet-600 p-3 rounded-2xl shadow-[0_0_20px_rgba(139,92,246,0.5)]"
                   >
                     <Trophy size={size > 6 ? 40 : 32} className="text-white" fill="rgba(255,255,255,0.2)" />
                   </motion.div>
@@ -337,7 +337,7 @@ export const MagicSquareCard = ({
         <div className="flex flex-col mt-3 gap-2 relative z-10">
             <div className="h-12 flex items-center justify-center px-4 bg-slate-950/60 rounded-xl border border-white/5 shadow-inner overflow-hidden relative">
                 <div className="absolute inset-0 bg-blue-500/5 transition-colors duration-500 group-hover:bg-blue-500/10" />
-                <span className="text-[11px] font-black uppercase tracking-widest text-center text-slate-300 relative z-10 leading-snug">
+                <span className="text-[11px] font-black uppercase tracking-widest text-center text-orange-400 relative z-10 leading-snug">
                     {(algoMode !== 'formula' && algoMode !== 'swing') ? (dynamicDesc || "Ready for Simulation") : (currentStep?.desc || (isComplete ? 'Analysis Finished' : 'Processing Logic...'))}
                 </span>
             </div>
