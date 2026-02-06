@@ -145,16 +145,16 @@ export const MagicSquareCard = ({
       <div className="absolute inset-0 bg-blueprint opacity-[0.03] pointer-events-none" />
       {/* Header */}
       <div className="flex justify-between items-center mb-1.5 min-h-[28px]">
-        <div className="flex items-center gap-2.5">
-            <div className={cn(
-              "p-1.5 rounded-lg",
-              isComplete ? "bg-emerald-500/20 text-emerald-400" : "bg-slate-700/40 text-slate-400"
-            )}>
-              {algoMode === 'dynamic' ? <BrainCircuit size={14} /> : <Zap size={14} />}
+        <div className="flex items-center gap-3">
+            {algoMode === 'dynamic' ? <BrainCircuit size={18} className="text-emerald-400" /> : <Zap size={18} className="text-emerald-400" />}
+            <div className="flex items-center gap-2">
+                <span className="text-sm font-black text-white bg-emerald-500/30 px-2 py-0.5 rounded-lg border border-emerald-500/40 shadow-[0_0_10px_rgba(16,185,129,0.2)]">
+                    {size}x{size}
+                </span>
+                <h3 className="text-sm font-black uppercase tracking-[0.25em] text-white/90 drop-shadow-md">
+                    {mainMode === 'simulation' ? `${algoMode} ENGINE` : 'PRACTICE'}
+                </h3>
             </div>
-            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-300">
-                {mainMode === 'simulation' ? algoMode : `${size}x${size} Practice`}
-            </h3>
         </div>
         
         <div className="flex items-center gap-2">
